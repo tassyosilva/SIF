@@ -164,6 +164,12 @@ class FileProcessor:
             
             logger.info(f"Successfully processed {filename}, FAISS ID: {faiss_id}")
             
+            # Salvar o índice FAISS após cada processamento
+            index_path = os.path.join(self.processed_dir, "faiss_index.bin")
+            metadata_path = os.path.join(self.processed_dir, "faiss_metadata.pkl")
+            self.faiss_index.save(index_path, metadata_path)
+            logger.info(f"FAISS index saved after processing {filename}")
+            
             return {
                 "success": True,
                 "filename": filename,

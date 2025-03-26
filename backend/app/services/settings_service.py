@@ -7,6 +7,7 @@ from sqlalchemy import func
 from ..models.settings import Settings
 from ..models.person import Person
 from ..schemas.settings import SettingsCreate, SettingsUpdate, SystemInfo
+from ..core.dependencies import rebuild_index_from_db
 
 def get_settings(db: Session):
     """Obter configurações do sistema"""
@@ -82,24 +83,16 @@ def get_system_info(db: Session) -> SystemInfo:
 
 def rebuild_faiss_index(db: Session, faiss_index, file_processor):
     """Reconstruir o índice FAISS"""
-    # Limpar o índice FAISS
-    faiss_index.clear()
+    # Usar a função de reconstrução do dependencies.py
+    success_count, failure_count = rebuild_index_from_db(db, faiss_index, file_processor)
     
-    # Obter todas as pessoas com faces detectadas
-    persons = db.query(Person).filter(Person.face_detected == True).all()
-    
-    # Processar cada pessoa novamente para adicionar ao índice
-    for person in persons:
-        if person.file_path and os.path.exists(person.file_path):
-            file_processor.process_file(person.file_path, person.person_id, person.name)
-    
-    # Salvar o índice FAISS
-    settings = get_settings(db)
-    index_path = os.path.join(settings.processed_dir, "faiss_index.bin")
-    metadata_path = os.path.join(settings.processed_dir, "faiss_metadata.pkl")
-    faiss_index.save(index_path, metadata_path)
-    
-    return True
+    return {
+        "success": True,
+        "total_processed": success_count + failure_count,
+        "successful": success_count,
+        "failed": failure_count,
+        "message": f"FAISS index rebuilt successfully: {success_count} successful, {failure_count} failed"
+    }
 
 def create_backup(db: Session):
     """Criar um backup do sistema"""
@@ -131,4 +124,9 @@ def create_backup(db: Session):
     settings.last_backup = datetime.utcnow()
     db.commit()
     
-    return True
+    return {
+        "success": True,
+        "backup_path": backup_path,
+        "timestamp": timestamp,
+        "message": f"Backup created successfully at {backup_path}"
+    }

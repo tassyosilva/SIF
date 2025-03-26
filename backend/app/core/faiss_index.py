@@ -48,6 +48,16 @@ class FaissIndex:
         
         logger.info(f"Created FAISS index of type {self.index_type}")
     
+    def clear(self):
+        """
+        Limpa o índice FAISS, removendo todos os embeddings.
+        """
+        # Recriar o índice
+        self.create_index()
+        # Limpar o mapa de IDs
+        self.id_map = {}
+        logger.info("FAISS index cleared")
+    
     def add_embedding(self, embedding: np.ndarray, metadata: Dict[str, Any]) -> int:
         """
         Adiciona um embedding ao índice com seus metadados associados.
@@ -166,6 +176,7 @@ class FaissIndex:
             }, f)
         
         logger.info(f"FAISS index saved to {index_path} and metadata to {metadata_path}")
+        logger.info(f"Saved index contains {self.index.ntotal} embeddings and {len(self.id_map)} metadata entries")
     
     def load(self, index_path: str, metadata_path: str):
         """
@@ -175,17 +186,40 @@ class FaissIndex:
             index_path: Caminho para o arquivo do índice FAISS
             metadata_path: Caminho para o arquivo de metadados
         """
-        # Carregar o índice FAISS
-        self.index = faiss.read_index(index_path)
-        
-        # Carregar os metadados
-        with open(metadata_path, 'rb') as f:
-            metadata = pickle.load(f)
-            self.id_map = metadata['id_map']
-            self.dimension = metadata['dimension']
-            self.index_type = metadata['index_type']
-        
-        logger.info(f"FAISS index loaded from {index_path} and metadata from {metadata_path}")
+        try:
+            # Logging para debug
+            logger.info(f"Tentando carregar índice de {index_path} e metadados de {metadata_path}")
+            
+            # Verificar se os arquivos existem
+            if not os.path.exists(index_path):
+                logger.error(f"Arquivo de índice FAISS não encontrado: {index_path}")
+                return False
+                
+            if not os.path.exists(metadata_path):
+                logger.error(f"Arquivo de metadados FAISS não encontrado: {metadata_path}")
+                return False
+            
+            # Carregar o índice FAISS
+            self.index = faiss.read_index(index_path)
+            
+            # Carregar os metadados
+            with open(metadata_path, 'rb') as f:
+                metadata = pickle.load(f)
+                self.id_map = metadata['id_map']
+                self.dimension = metadata['dimension']
+                self.index_type = metadata['index_type']
+            
+            logger.info(f"FAISS index loaded from {index_path} and metadata from {metadata_path}")
+            logger.info(f"Loaded index contains {self.index.ntotal} embeddings and {len(self.id_map)} metadata entries")
+            
+            return True
+            
+        except Exception as e:
+            logger.error(f"Error loading FAISS index: {str(e)}")
+            # Recriar o índice em caso de falha
+            self.create_index()
+            self.id_map = {}
+            return False
     
     def get_total_items(self) -> int:
         """
