@@ -60,6 +60,7 @@ class SearchResult(BaseModel):
     distance: float
     similarity: float
     person_id: str
+    cpf: str 
     person_name: str
     origin: str
     filename: str

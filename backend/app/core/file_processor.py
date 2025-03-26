@@ -311,12 +311,15 @@ class FileProcessor:
             results = []
             for i, (distance, metadata) in enumerate(zip(distances, metadatas)):
                 if metadata is not None:
+                    # Adicione este log
+                    logger.info(f"Metadata for result {i+1}: {metadata}")
+                    
                     results.append({
                         "rank": i + 1,
                         "distance": float(distance),
                         "similarity": float(max(0, 1 - distance / 2)),  # Converter distância para similaridade
                         "person_id": metadata["person_id"],
-                        "cpf": metadata["cpf"],  # Adicionado o campo CPF nos resultados
+                        "cpf": metadata.get("cpf", "N/A"),  # Usa "N/A" se o campo não existir
                         "person_name": metadata["person_name"],
                         "origin": metadata["origin"],
                         "filename": metadata["filename"],
