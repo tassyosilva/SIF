@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
-    Container, Typography, Box, Grid, Paper,
+    Box, Typography, Grid, Paper,
     Card, CardContent, CircularProgress, Alert
 } from '@mui/material';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from 'recharts';
@@ -45,7 +45,7 @@ const Dashboard: React.FC = () => {
     const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
 
     return (
-        <Container maxWidth="lg">
+        <Box sx={{ width: '100%' }}>
             <Typography variant="h4" component="h1" gutterBottom>
                 Dashboard
             </Typography>
@@ -136,7 +136,7 @@ const Dashboard: React.FC = () => {
                     </Grid>
                 </>
             )}
-        </Container>
+        </Box>
     );
 };
 
