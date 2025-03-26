@@ -33,10 +33,8 @@ import {
     Refresh as RefreshIcon,
     Storage as StorageIcon,
     Memory as MemoryIcon,
-    Speed as SpeedIcon,
     Build as BuildIcon,
     Backup as BackupIcon,
-    Delete as DeleteIcon,
     People as PeopleIcon,
     Image as ImageIcon,
 } from '@mui/icons-material';
@@ -68,7 +66,6 @@ interface Settings {
 }
 
 const SettingsPage = () => {
-    const [loading, setLoading] = useState(false);
     const [saveLoading, setSaveLoading] = useState(false);
     const [rebuildLoading, setRebuildLoading] = useState(false);
     const [backupLoading, setBackupLoading] = useState(false);
@@ -119,7 +116,7 @@ const SettingsPage = () => {
 
     // Buscar configurações do sistema
     const fetchSettings = async () => {
-        setLoading(true);
+        // Atualizando o estado de loading para componentes visuais se necessário
         setError(null);
 
         try {
@@ -128,14 +125,12 @@ const SettingsPage = () => {
         } catch (err) {
             console.error('Erro ao carregar configurações:', err);
             setError('Ocorreu um erro ao carregar as configurações. Por favor, tente novamente.');
-        } finally {
-            setLoading(false);
         }
     };
 
     // Buscar informações do sistema
     const fetchSystemInfo = async () => {
-        setLoading(true);
+        // Atualizando o estado de loading para componentes visuais se necessário
         setError(null);
 
         try {
@@ -144,8 +139,6 @@ const SettingsPage = () => {
         } catch (err) {
             console.error('Erro ao carregar informações do sistema:', err);
             setError('Ocorreu um erro ao carregar as informações do sistema. Por favor, tente novamente.');
-        } finally {
-            setLoading(false);
         }
     };
 
