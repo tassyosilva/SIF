@@ -1,10 +1,11 @@
-import { AppBar, Toolbar, Typography, IconButton, Box, Badge, Avatar, Menu, MenuItem } from '@mui/material';
+import { AppBar, Toolbar, Typography, IconButton, Box, Badge, Menu, MenuItem } from '@mui/material';
 import {
     Menu as MenuIcon,
     Notifications as NotificationsIcon,
     AccountCircle as AccountCircleIcon,
 } from '@mui/icons-material';
 import { useState } from 'react';
+import logoImage from '../../assets/logo.png'; // Importando a logo
 
 interface HeaderProps {
     open: boolean;
@@ -43,14 +44,29 @@ const Header = ({ open, toggleDrawer }: HeaderProps) => {
                 >
                     <MenuIcon />
                 </IconButton>
-                <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
-                    Sistema de Reconhecimento Facial
-                </Typography>
+
+                <Box sx={{ display: 'flex', alignItems: 'center', flexGrow: 1 }}>
+                    {/* Logo da Polícia Civil */}
+                    <Box sx={{ mr: 2, display: 'flex', alignItems: 'center' }}>
+                        <img
+                            src={logoImage}
+                            alt="Logo Polícia Civil"
+                            style={{
+                                height: '40px',
+                                marginRight: '12px'
+                            }}
+                        />
+                    </Box>
+
+                    <Typography variant="h6" noWrap component="div">
+                        Sistema de Identificação Facial
+                    </Typography>
+                </Box>
 
                 <Box sx={{ display: 'flex' }}>
                     <IconButton color="inherit">
                         <Badge badgeContent={4} color="error">
-                            <NotificationsIcon />
+                            <NotificationsIcon sx={{ color: '#D4AF37' }} />
                         </Badge>
                     </IconButton>
 
@@ -62,8 +78,9 @@ const Header = ({ open, toggleDrawer }: HeaderProps) => {
                         onClick={handleMenu}
                         color="inherit"
                     >
-                        <AccountCircleIcon />
+                        <AccountCircleIcon sx={{ color: '#D4AF37' }} />
                     </IconButton>
+
                     <Menu
                         id="menu-appbar"
                         anchorEl={anchorEl}

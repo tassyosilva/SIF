@@ -11,16 +11,63 @@ import Upload from './pages/Upload';
 import Search from './pages/Search';
 import Settings from './pages/Settings';
 
+// Cores da Polícia Civil
 const theme = createTheme({
   palette: {
     primary: {
-      main: '#1976d2',
+      main: '#000000', // Preto
+      contrastText: '#FFFFFF', // Texto branco sobre fundo preto
     },
     secondary: {
-      main: '#dc004e',
+      main: '#D4AF37', // Dourado
+      contrastText: '#000000', // Texto preto sobre fundo dourado
     },
     background: {
-      default: '#f5f5f5',
+      default: '#FFFFFF', // Fundo branco
+      paper: '#FFFFFF', // Componentes com fundo branco
+    },
+    text: {
+      primary: '#000000', // Texto preto
+      secondary: '#757575', // Texto cinza secundário
+    },
+  },
+  components: {
+    MuiAppBar: {
+      styleOverrides: {
+        root: {
+          backgroundColor: '#000000', // AppBar preta
+        },
+      },
+    },
+    MuiDrawer: {
+      styleOverrides: {
+        paper: {
+          backgroundColor: '#000000', // Sidebar preta
+          color: '#FFFFFF', // Texto branco na sidebar
+        },
+      },
+    },
+    MuiListItemIcon: {
+      styleOverrides: {
+        root: {
+          color: '#D4AF37', // Ícones dourados na sidebar
+        },
+      },
+    },
+    MuiListItemButton: {
+      styleOverrides: {
+        root: {
+          '&.Mui-selected': {
+            backgroundColor: 'rgba(212, 175, 55, 0.2)', // Dourado com transparência para item selecionado
+            '&:hover': {
+              backgroundColor: 'rgba(212, 175, 55, 0.3)',
+            },
+          },
+          '&:hover': {
+            backgroundColor: 'rgba(255, 255, 255, 0.1)', // Branco com transparência para hover
+          },
+        },
+      },
     },
   },
 });

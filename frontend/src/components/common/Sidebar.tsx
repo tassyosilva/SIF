@@ -64,11 +64,12 @@ const Sidebar = ({ open }: SidebarProps) => {
                         easing: theme.transitions.easing.sharp,
                         duration: theme.transitions.duration.enteringScreen,
                     }),
+                    // Cor já definida no theme
                 },
             }}
         >
             <Toolbar />
-            <Divider />
+            <Divider sx={{ borderColor: 'rgba(255, 255, 255, 0.12)' }} />
             <List>
                 {menuItems.map((item) => (
                     <ListItem key={item.text} disablePadding>
@@ -87,13 +88,17 @@ const Sidebar = ({ open }: SidebarProps) => {
                                     minWidth: 0,
                                     mr: open ? 3 : 'auto',
                                     justifyContent: 'center',
+                                    // Cor já definida no theme
                                 }}
                             >
                                 {item.icon}
                             </ListItemIcon>
                             <ListItemText
                                 primary={item.text}
-                                sx={{ opacity: open ? 1 : 0 }}
+                                sx={{
+                                    opacity: open ? 1 : 0,
+                                    color: '#FFFFFF' // Garantindo que o texto seja branco
+                                }}
                             />
                         </ListItemButton>
                     </ListItem>

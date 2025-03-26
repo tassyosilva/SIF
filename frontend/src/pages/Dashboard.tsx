@@ -42,17 +42,18 @@ const Dashboard: React.FC = () => {
         fetchData();
     }, []);
 
-    const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
+    // Cores da Polícia Civil - preto e dourado
+    const COLORS = ['#D4AF37', '#000000', '#8B7D39', '#4C4C4C', '#D4C097'];
 
     return (
         <Box sx={{ width: '100%' }}>
-            <Typography variant="h4" component="h1" gutterBottom>
+            <Typography variant="h4" component="h1" gutterBottom sx={{ color: '#000000' }}>
                 Dashboard
             </Typography>
 
             {loading ? (
                 <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
-                    <CircularProgress />
+                    <CircularProgress sx={{ color: '#D4AF37' }} />
                 </Box>
             ) : error ? (
                 <Alert severity="error">{error}</Alert>
@@ -60,13 +61,13 @@ const Dashboard: React.FC = () => {
                 <>
                     <Grid container spacing={3}>
                         <Grid item xs={12} md={4}>
-                            <Paper elevation={3} sx={{ p: 2, height: '100%' }}>
-                                <Card>
+                            <Paper elevation={3} sx={{ p: 2, height: '100%', borderTop: '3px solid #D4AF37' }}>
+                                <Card sx={{ boxShadow: 'none' }}>
                                     <CardContent>
-                                        <Typography variant="h5" component="div">
+                                        <Typography variant="h5" component="div" sx={{ color: '#000000' }}>
                                             Total de Pessoas
                                         </Typography>
-                                        <Typography variant="h3" component="div" sx={{ mt: 2 }}>
+                                        <Typography variant="h3" component="div" sx={{ mt: 2, color: '#D4AF37', fontWeight: 'bold' }}>
                                             {totalPersons}
                                         </Typography>
                                     </CardContent>
@@ -75,8 +76,8 @@ const Dashboard: React.FC = () => {
                         </Grid>
 
                         <Grid item xs={12} md={8}>
-                            <Paper elevation={3} sx={{ p: 2, height: '100%' }}>
-                                <Typography variant="h6" gutterBottom>
+                            <Paper elevation={3} sx={{ p: 2, height: '100%', borderTop: '3px solid #D4AF37' }}>
+                                <Typography variant="h6" gutterBottom sx={{ color: '#000000' }}>
                                     Distribuição por Origem
                                 </Typography>
                                 {originStats.length > 0 ? (
@@ -106,8 +107,8 @@ const Dashboard: React.FC = () => {
                         </Grid>
 
                         <Grid item xs={12}>
-                            <Paper elevation={3} sx={{ p: 2 }}>
-                                <Typography variant="h6" gutterBottom>
+                            <Paper elevation={3} sx={{ p: 2, borderTop: '3px solid #D4AF37' }}>
+                                <Typography variant="h6" gutterBottom sx={{ color: '#000000' }}>
                                     Pessoas por Origem
                                 </Typography>
                                 {originStats.length > 0 ? (
@@ -125,7 +126,7 @@ const Dashboard: React.FC = () => {
                                             <YAxis />
                                             <Tooltip />
                                             <Legend />
-                                            <Bar dataKey="value" name="Quantidade" fill="#8884d8" />
+                                            <Bar dataKey="value" name="Quantidade" fill="#D4AF37" />
                                         </BarChart>
                                     </ResponsiveContainer>
                                 ) : (
