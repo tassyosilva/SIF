@@ -22,6 +22,11 @@ import {
     ListItem,
     ListItemText,
     ListItemIcon,
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogContentText,
+    DialogActions,
 } from '@mui/material';
 import {
     Save as SaveIcon,
@@ -68,7 +73,9 @@ const SettingsPage = () => {
     const [rebuildLoading, setRebuildLoading] = useState(false);
     const [backupLoading, setBackupLoading] = useState(false);
     const [success, setSuccess] = useState(false);
+    const [successMessage, setSuccessMessage] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
+    const [openConfirmDialog, setOpenConfirmDialog] = useState(false);
     const [systemInfo, setSystemInfo] = useState<SystemInfo>({
         version: '',
         database_status: '',
@@ -157,6 +164,7 @@ const SettingsPage = () => {
         try {
             await api.put('/settings', settings);
             setSuccess(true);
+            setSuccessMessage('Configurações salvas com sucesso!');
 
             // Atualizar informações do sistema após salvar configurações
             fetchSystemInfo();
@@ -168,18 +176,24 @@ const SettingsPage = () => {
         }
     };
 
-    const rebuildIndex = async () => {
+    const handleRebuildClick = () => {
+        setOpenConfirmDialog(true);
+    };
+
+    const confirmRebuild = async () => {
+        setOpenConfirmDialog(false);
         setRebuildLoading(true);
         setError(null);
 
         try {
             await api.post('/settings/rebuild-index');
             setSuccess(true);
+            setSuccessMessage('Reconstrução do índice FAISS iniciada. Este processo pode levar alguns minutos dependendo da quantidade de imagens.');
 
             // Atualizar informações do sistema após reconstruir o índice
             setTimeout(() => {
                 fetchSystemInfo();
-            }, 2000); // Esperar um pouco para o processo em segundo plano iniciar
+            }, 5000); // Aumentado para 5 segundos
         } catch (err) {
             console.error('Erro ao reconstruir índice:', err);
             setError('Ocorreu um erro ao reconstruir o índice FAISS. Por favor, tente novamente.');
@@ -195,6 +209,7 @@ const SettingsPage = () => {
         try {
             await api.post('/settings/backup');
             setSuccess(true);
+            setSuccessMessage('Backup criado com sucesso!');
 
             // Atualizar informações do sistema após criar backup
             setTimeout(() => {
@@ -294,7 +309,7 @@ const SettingsPage = () => {
                                 variant="outlined"
                                 color="primary"
                                 startIcon={rebuildLoading ? <CircularProgress size={20} color="inherit" /> : <RefreshIcon />}
-                                onClick={rebuildIndex}
+                                onClick={handleRebuildClick}
                                 disabled={rebuildLoading || backupLoading}
                             >
                                 {rebuildLoading ? 'Reconstruindo...' : 'Reconstruir Índice FAISS'}
@@ -503,7 +518,7 @@ const SettingsPage = () => {
 
                         {success && (
                             <Alert severity="success" sx={{ mt: 3 }}>
-                                Configurações salvas com sucesso!
+                                {successMessage || "Operação realizada com sucesso!"}
                             </Alert>
                         )}
 
@@ -527,6 +542,24 @@ const SettingsPage = () => {
                     </Paper>
                 </Grid>
             </Grid>
+
+            {/* Diálogo de confirmação */}
+            <Dialog open={openConfirmDialog} onClose={() => setOpenConfirmDialog(false)}>
+                <DialogTitle>Confirmar reconstrução do índice</DialogTitle>
+                <DialogContent>
+                    <DialogContentText>
+                        Você deseja prosseguir? Esse processo pode levar alguns minutos dependendo da quantidade de imagens.
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setOpenConfirmDialog(false)} color="primary">
+                        Cancelar
+                    </Button>
+                    <Button onClick={confirmRebuild} color="primary" variant="contained">
+                        Sim, reconstruir
+                    </Button>
+                </DialogActions>
+            </Dialog>
         </Box>
     );
 };
