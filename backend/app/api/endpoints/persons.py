@@ -117,6 +117,7 @@ async def upload_file(file: UploadFile = File(...), db: Session = Depends(get_db
         # Criar nova pessoa
         person_data = {
             "person_id": result["person_id"],
+            "cpf": result["cpf"],  # Adicionar CPF aqui
             "name": result["person_name"],
             "origin_code": result["origin"][:3],
             "origin": result["origin"],
@@ -174,6 +175,7 @@ def batch_process(db: Session = Depends(get_db)):
                     # Criar nova pessoa
                     person_data = {
                         "person_id": detail["person_id"],
+                        "cpf": detail["cpf"],  # Adicionar CPF aqui
                         "name": detail["person_name"],
                         "origin_code": detail["origin"][:3],
                         "origin": detail["origin"],

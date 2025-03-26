@@ -6,7 +6,8 @@ class PersonBase(BaseModel):
     """
     Esquema base para pessoas.
     """
-    person_id: str = Field(..., description="ID da pessoa (12 dígitos)")
+    person_id: str = Field(..., description="RG da pessoa (11 dígitos)")
+    cpf: str = Field(..., description="CPF da pessoa (formato: XXX.XXX.XXX-XX)")
     name: str = Field(..., description="Nome da pessoa")
     origin_code: str = Field(..., description="Código de origem (001, 002, etc.)")
     origin: str = Field(..., description="Origem (idnet, cacador, etc.)")
@@ -41,7 +42,7 @@ class PersonInDB(PersonBase):
     faiss_id: Optional[int]
     created_at: datetime
     updated_at: datetime
-    
+
     class Config:
         orm_mode = True
 

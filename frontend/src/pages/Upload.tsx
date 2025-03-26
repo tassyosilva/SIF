@@ -475,7 +475,7 @@ const Upload = () => {
                                         primary={file.file.name}
                                         secondary={
                                             file.status === 'success' ?
-                                                `ID: ${file.result?.person_id} | Nome: ${file.result?.person_name}` :
+                                                `ID: ${file.result?.person_id} | CPF: ${file.result?.cpf} | Nome: ${file.result?.name}` :
                                                 file.error || 'Erro no processamento'
                                         }
                                     />
@@ -625,7 +625,10 @@ const Upload = () => {
                                             <strong>ID da Pessoa:</strong> {selectedFile.result.person_id}
                                         </Typography>
                                         <Typography variant="body2">
-                                            <strong>Nome:</strong> {selectedFile.result.person_name}
+                                            <strong>CPF:</strong> {selectedFile.result.cpf}
+                                        </Typography>
+                                        <Typography variant="body2">
+                                            <strong>Nome:</strong> {selectedFile.result.name}
                                         </Typography>
                                         <Typography variant="body2">
                                             <strong>Origem:</strong> {selectedFile.result.origin}

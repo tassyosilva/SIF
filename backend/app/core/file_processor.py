@@ -46,13 +46,14 @@ class FileProcessor:
     
     def parse_filename(self, filename: str) -> Dict[str, Any]:
         """
-        Extrai informações do nome do arquivo seguindo o padrão:
-        OOONNNNNNNNNNNNNNOME.ext
+        Extrai informações do nome do arquivo seguindo o novo padrão:
+        OOOCCCCCCCCCCCRRRRRRRRRRRNOME.ext
         
         Onde:
         - OOO: origem do arquivo (001 para idnet, 002 para cacador)
-        - NNNNNNNNNNNN: identidade da pessoa (12 dígitos)
-        - NOME: nome da pessoa
+        - CCCCCCCCCCC: CPF da pessoa (11 dígitos)
+        - RRRRRRRRRRR: RG da pessoa (11 dígitos)
+        - NOME: nome da pessoa (com underscores)
         - .ext: extensão do arquivo (.jpg, .png, etc.)
         
         Args:
@@ -66,8 +67,8 @@ class FileProcessor:
             base_name = os.path.splitext(filename)[0]
             
             # Padrão de regex para extrair as informações
-            # Formato: 001000000022582cibele dantas damasceno.jpg
-            pattern = r'^(\d{3})(\d{12})(.+)$'
+            # Formato: 0010010071423400000001168FRANCISCO_DAS_CHAGAS_DUARTE.jpg
+            pattern = r'^(\d{3})(\d{11})(\d{11})(.+)$'
             match = re.match(pattern, base_name)
             
             if not match:
@@ -78,8 +79,18 @@ class FileProcessor:
                 }
             
             origin_code = match.group(1)
-            person_id = match.group(2)
-            person_name = match.group(3)
+            cpf_raw = match.group(2)
+            person_id_raw = match.group(3)
+            person_name_raw = match.group(4)
+            
+            # Formatar CPF (001.007.142-34)
+            cpf = f"{cpf_raw[:3]}.{cpf_raw[3:6]}.{cpf_raw[6:9]}-{cpf_raw[9:]}"
+            
+            # Formatar RG (apenas remover zeros à esquerda desnecessários)
+            person_id = person_id_raw.lstrip('0')
+            
+            # Formatar nome (substituir underscores por espaços)
+            person_name = person_name_raw.replace('_', ' ')
             
             # Mapear códigos de origem para nomes
             origin_map = {
@@ -94,6 +105,7 @@ class FileProcessor:
                 "filename": filename,
                 "origin_code": origin_code,
                 "origin": origin,
+                "cpf": cpf,
                 "person_id": person_id,
                 "person_name": person_name
             }
@@ -143,6 +155,7 @@ class FileProcessor:
             # Criar metadados para o índice FAISS
             metadata = {
                 "person_id": file_info["person_id"],
+                "cpf": file_info["cpf"],  # Adicionar CPF aos metadados
                 "person_name": file_info["person_name"],
                 "origin": file_info["origin"],
                 "filename": filename,
@@ -174,6 +187,7 @@ class FileProcessor:
                 "success": True,
                 "filename": filename,
                 "person_id": file_info["person_id"],
+                "cpf": file_info["cpf"],  # Adicionado o campo CPF no retorno
                 "person_name": file_info["person_name"],
                 "origin": file_info["origin"],
                 "faiss_id": faiss_id
@@ -302,6 +316,7 @@ class FileProcessor:
                         "distance": float(distance),
                         "similarity": float(max(0, 1 - distance / 2)),  # Converter distância para similaridade
                         "person_id": metadata["person_id"],
+                        "cpf": metadata["cpf"],  # Adicionado o campo CPF nos resultados
                         "person_name": metadata["person_name"],
                         "origin": metadata["origin"],
                         "filename": metadata["filename"],

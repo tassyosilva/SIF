@@ -3,6 +3,7 @@ import { api } from './api';
 export interface Person {
     id: number;
     person_id: string;
+    cpf: string; // Campo adicionado
     name: string;
     origin_code: string;
     origin: string;
@@ -18,6 +19,7 @@ export interface Person {
 
 export interface PersonCreate {
     person_id: string;
+    cpf: string; // Campo adicionado
     name: string;
     origin_code: string;
     origin: string;
@@ -25,6 +27,7 @@ export interface PersonCreate {
 
 export interface PersonUpdate {
     name?: string;
+    cpf?: string; // Campo adicionado
     origin_code?: string;
     origin?: string;
 }
@@ -99,13 +102,11 @@ export const deletePerson = async (personId: string) => {
 export const uploadImage = async (file: File) => {
     const formData = new FormData();
     formData.append('file', file);
-
     const response = await api.post<UploadResponse>('/persons/upload/', formData, {
         headers: {
             'Content-Type': 'multipart/form-data',
         },
     });
-
     return response.data;
 };
 
