@@ -3,10 +3,15 @@ import { api } from './api';
 
 export interface SearchResult {
     person_id: string;
-    name: string;
+    person_name: string;  // Alterado de "name" para "person_name"
     origin: string;
     similarity: number;
     file_path: string;
+    cpf: string;
+    rank: number;
+    distance: number;
+    filename: string;
+    processed_date: string;
 }
 
 export interface SearchResponse {
@@ -33,5 +38,6 @@ export const searchByImage = async (file: File, k: number = 5) => {
 // Buscar faces similares a partir do ID de uma pessoa
 export const searchByPersonId = async (personId: string, k: number = 5) => {
     const response = await api.post<SearchResponse>(`/recognition/search-by-id/?k=${k}`, { person_id: personId });
+
     return response.data;
 };

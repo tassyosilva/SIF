@@ -17,6 +17,10 @@ import {
     Alert,
     Chip,
     LinearProgress,
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogActions,
 } from '@mui/material';
 import {
     Search as SearchIcon,
@@ -35,6 +39,8 @@ const Search = () => {
     const [results, setResults] = useState<SearchResult[]>([]);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState(false);
+    const [detailsOpen, setDetailsOpen] = useState(false);
+    const [selectedResult, setSelectedResult] = useState<SearchResult | null>(null);
 
     const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
         setSearchMethod(newValue);
@@ -78,6 +84,9 @@ const Search = () => {
 
                 const response = await searchByImage(file, 5);
 
+                console.log("API Response:", response);
+                console.log("Results:", response.results);
+
                 if (response.success) {
                     setResults(response.results);
                     setSuccess(true);
@@ -120,6 +129,11 @@ const Search = () => {
         if (similarity >= 0.8) return 'info.main';
         if (similarity >= 0.7) return 'warning.main';
         return 'error.main';
+    };
+
+    const handleOpenDetails = (result: SearchResult) => {
+        setSelectedResult(result);
+        setDetailsOpen(true);
     };
 
     return (
@@ -275,7 +289,7 @@ const Search = () => {
                                         component="img"
                                         height="200"
                                         image={`http://localhost:8000/api/persons/${result.person_id}/image`}
-                                        alt={result.name}
+                                        alt={result.person_name}
                                         onError={(e: any) => {
                                             e.target.onerror = null;
                                             e.target.src = 'https://via.placeholder.com/300x200?text=Imagem+não+disponível';
@@ -284,7 +298,7 @@ const Search = () => {
                                     <CardContent>
                                         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
                                             <Typography variant="h6" component="div">
-                                                {result.name}
+                                                {result.person_name}
                                             </Typography>
                                             <Chip
                                                 label={`${(result.similarity * 100).toFixed(1)}%`}
@@ -294,7 +308,10 @@ const Search = () => {
                                         </Box>
 
                                         <Typography variant="body2" color="text.secondary" gutterBottom>
-                                            ID: {result.person_id}
+                                            RG: {result.person_id}
+                                        </Typography>
+                                        <Typography variant="body2" color="text.secondary" gutterBottom>
+                                            CPF: {result.cpf}
                                         </Typography>
 
                                         <Typography variant="body2" color="text.secondary">
@@ -320,7 +337,11 @@ const Search = () => {
                                         </Box>
                                     </CardContent>
                                     <CardActions>
-                                        <Button size="small" color="primary">
+                                        <Button
+                                            size="small"
+                                            color="primary"
+                                            onClick={() => handleOpenDetails(result)}
+                                        >
                                             Ver Detalhes
                                         </Button>
                                         <Button size="small" color="secondary">
@@ -333,6 +354,85 @@ const Search = () => {
                     </Grid>
                 </Box>
             )}
+
+            {/* Modal de detalhes */}
+            <Dialog
+                open={detailsOpen}
+                onClose={() => setDetailsOpen(false)}
+                maxWidth="md"
+                fullWidth
+            >
+                <DialogTitle>
+                    Detalhes da Pessoa
+                </DialogTitle>
+                <DialogContent dividers>
+                    {selectedResult && (
+                        <Grid container spacing={3}>
+                            <Grid item xs={12} md={6}>
+                                <Box
+                                    component="img"
+                                    src={`http://localhost:8000/api/persons/${selectedResult.person_id}/image`}
+                                    alt={selectedResult.person_name}
+                                    sx={{
+                                        width: '100%',
+                                        maxHeight: 400,
+                                        objectFit: 'contain',
+                                        border: '1px solid #ddd',
+                                        borderRadius: 1,
+                                    }}
+                                    onError={(e: any) => {
+                                        e.target.onerror = null;
+                                        e.target.src = 'https://via.placeholder.com/300x400?text=Imagem+não+disponível';
+                                    }}
+                                />
+                            </Grid>
+                            <Grid item xs={12} md={6}>
+                                <Typography variant="h5" gutterBottom>
+                                    {selectedResult.person_name}
+                                </Typography>
+
+                                <Divider sx={{ my: 2 }} />
+
+                                <Typography variant="body1">
+                                    <strong>RG:</strong> {selectedResult.person_id}
+                                </Typography>
+                                <Typography variant="body1">
+                                    <strong>CPF:</strong> {selectedResult.cpf}
+                                </Typography>
+                                <Typography variant="body1">
+                                    <strong>Origem:</strong> {selectedResult.origin}
+                                </Typography>
+                                <Typography variant="body1">
+                                    <strong>Similaridade:</strong> {(selectedResult.similarity * 100).toFixed(1)}%
+                                </Typography>
+
+                                <Box sx={{ mt: 2, display: 'flex', alignItems: 'center' }}>
+                                    <Typography variant="body2" sx={{ mr: 1 }}>
+                                        Similaridade:
+                                    </Typography>
+                                    <Box sx={{ width: '100%', mr: 1 }}>
+                                        <LinearProgress
+                                            variant="determinate"
+                                            value={selectedResult.similarity * 100}
+                                            color={
+                                                selectedResult.similarity >= 0.9 ? "success" :
+                                                    selectedResult.similarity >= 0.8 ? "primary" :
+                                                        selectedResult.similarity >= 0.7 ? "warning" : "error"
+                                            }
+                                            sx={{ height: 8, borderRadius: 5 }}
+                                        />
+                                    </Box>
+                                </Box>
+                            </Grid>
+                        </Grid>
+                    )}
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setDetailsOpen(false)}>
+                        Fechar
+                    </Button>
+                </DialogActions>
+            </Dialog>
         </Box>
     );
 };
