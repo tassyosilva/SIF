@@ -47,10 +47,11 @@ const theme = createTheme({
         },
       },
     },
+    // Corrigido: Os ícones na sidebar agora serão brancos para ter bom contraste com o fundo preto
     MuiListItemIcon: {
       styleOverrides: {
         root: {
-          color: '#D4AF37', // Ícones dourados na sidebar
+          color: '#FFFFFF', // Ícones brancos na sidebar (fundo preto)
         },
       },
     },
@@ -58,13 +59,23 @@ const theme = createTheme({
       styleOverrides: {
         root: {
           '&.Mui-selected': {
-            backgroundColor: 'rgba(212, 175, 55, 0.2)', // Dourado com transparência para item selecionado
+            backgroundColor: 'rgba(212, 175, 55, 0.4)', // Dourado mais escuro para item selecionado
             '&:hover': {
-              backgroundColor: 'rgba(212, 175, 55, 0.3)',
+              backgroundColor: 'rgba(212, 175, 55, 0.5)',
             },
           },
           '&:hover': {
             backgroundColor: 'rgba(255, 255, 255, 0.1)', // Branco com transparência para hover
+          },
+        },
+      },
+    },
+    // Ícones nos componentes com fundo branco serão pretos
+    MuiSvgIcon: {
+      styleOverrides: {
+        root: {
+          '&.MuiSvgIcon-colorPrimary': {
+            color: '#000000', // Ícones primários pretos
           },
         },
       },

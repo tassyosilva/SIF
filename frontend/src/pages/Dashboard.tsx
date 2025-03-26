@@ -42,8 +42,8 @@ const Dashboard: React.FC = () => {
         fetchData();
     }, []);
 
-    // Cores da Polícia Civil - preto e dourado
-    const COLORS = ['#D4AF37', '#000000', '#8B7D39', '#4C4C4C', '#D4C097'];
+    // Cores da Polícia Civil com bom contraste
+    const COLORS = ['#D4AF37', '#000000', '#8B7D39', '#4C4C4C', '#333333'];
 
     return (
         <Box sx={{ width: '100%' }}>
@@ -53,7 +53,7 @@ const Dashboard: React.FC = () => {
 
             {loading ? (
                 <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
-                    <CircularProgress sx={{ color: '#D4AF37' }} />
+                    <CircularProgress sx={{ color: '#000000' }} />
                 </Box>
             ) : error ? (
                 <Alert severity="error">{error}</Alert>
@@ -67,7 +67,7 @@ const Dashboard: React.FC = () => {
                                         <Typography variant="h5" component="div" sx={{ color: '#000000' }}>
                                             Total de Pessoas
                                         </Typography>
-                                        <Typography variant="h3" component="div" sx={{ mt: 2, color: '#D4AF37', fontWeight: 'bold' }}>
+                                        <Typography variant="h3" component="div" sx={{ mt: 2, color: '#000000', fontWeight: 'bold' }}>
                                             {totalPersons}
                                         </Typography>
                                     </CardContent>
@@ -126,7 +126,7 @@ const Dashboard: React.FC = () => {
                                             <YAxis />
                                             <Tooltip />
                                             <Legend />
-                                            <Bar dataKey="value" name="Quantidade" fill="#D4AF37" />
+                                            <Bar dataKey="value" name="Quantidade" fill="#000000" />
                                         </BarChart>
                                     </ResponsiveContainer>
                                 ) : (

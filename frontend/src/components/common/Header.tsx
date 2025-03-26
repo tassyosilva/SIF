@@ -66,7 +66,7 @@ const Header = ({ open, toggleDrawer }: HeaderProps) => {
                 <Box sx={{ display: 'flex' }}>
                     <IconButton color="inherit">
                         <Badge badgeContent={4} color="error">
-                            <NotificationsIcon sx={{ color: '#D4AF37' }} />
+                            <NotificationsIcon />
                         </Badge>
                     </IconButton>
 
@@ -78,7 +78,7 @@ const Header = ({ open, toggleDrawer }: HeaderProps) => {
                         onClick={handleMenu}
                         color="inherit"
                     >
-                        <AccountCircleIcon sx={{ color: '#D4AF37' }} />
+                        <AccountCircleIcon />
                     </IconButton>
 
                     <Menu
