@@ -317,13 +317,31 @@ class FileProcessor:
             results = []
             for i, (distance, metadata) in enumerate(zip(distances, metadatas)):
                 if metadata is not None:
-                    # Adicione este log
-                    logger.info(f"Metadata for result {i+1}: {metadata}")
+                    # Log para depuração
+                    logger.info(f"Distância para resultado {i+1}: {distance}")
+                    
+                    # Considerando que distâncias típicas estão na faixa de 500-1000,
+                    # vamos normalizar para uma faixa mais interpretável
+                    
+                    # Definir limites para a normalização (ajustar conforme necessário)
+                    min_distance = 500  # Considerar qualquer distância < 500 como muito similar
+                    max_distance = 1000  # Considerar qualquer distância > 1000 como totalmente diferente
+                    
+                    # Normalizar entre 0 e 1, e inverter (menor distância = maior similaridade)
+                    if distance <= min_distance:
+                        similarity = 1.0
+                    elif distance >= max_distance:
+                        similarity = 0.0
+                    else:
+                        similarity = 1.0 - ((distance - min_distance) / (max_distance - min_distance))
+                    
+                    # Log para depuração
+                    logger.info(f"Similaridade calculada para resultado {i+1}: {similarity:.4f}")
                     
                     results.append({
                         "rank": i + 1,
                         "distance": float(distance),
-                        "similarity": float(max(0, 1 - distance / 2)),  # Converter distância para similaridade
+                        "similarity": float(similarity),
                         "person_id": metadata["person_id"],
                         "cpf": metadata.get("cpf", "N/A"),  # Usa "N/A" se o campo não existir
                         "person_name": metadata["person_name"],
