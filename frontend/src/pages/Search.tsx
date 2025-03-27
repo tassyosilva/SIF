@@ -30,9 +30,17 @@ import {
 } from '@mui/icons-material';
 import { searchByImage, searchByPersonId, SearchResult } from '../services/recognitionService';
 
+// Adicione as novas funções de busca ao import
+import {
+    searchByPersonCpf,
+    searchByPersonName
+} from '../services/recognitionService';
+
 const Search = () => {
     const [searchMethod, setSearchMethod] = useState(0);
     const [personId, setPersonId] = useState('');
+    const [personCpf, setPersonCpf] = useState('');
+    const [personName, setPersonName] = useState('');
     const [file, setFile] = useState<File | null>(null);
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
@@ -49,6 +57,8 @@ const Search = () => {
 
     const resetSearch = () => {
         setPersonId('');
+        setPersonCpf('');
+        setPersonName('');
         setFile(null);
         setPreviewUrl(null);
         setResults([]);
@@ -74,47 +84,62 @@ const Search = () => {
             setSuccess(false);
             setResults([]);
 
-            if (searchMethod === 0) {
-                // Busca por imagem
-                if (!file) {
-                    setError('Por favor, selecione uma imagem para busca.');
+            let response;
+
+            switch (searchMethod) {
+                case 0: // Busca por imagem
+                    if (!file) {
+                        setError('Por favor, selecione uma imagem para busca.');
+                        setLoading(false);
+                        return;
+                    }
+                    response = await searchByImage(file, 5);
+                    break;
+
+                case 1: // Busca por RG
+                    if (!personId) {
+                        setError('Por favor, digite um RG válido.');
+                        setLoading(false);
+                        return;
+                    }
+                    response = await searchByPersonId(personId, 5);
+                    break;
+
+                case 2: // Busca por CPF
+                    if (!personCpf) {
+                        setError('Por favor, digite um CPF válido.');
+                        setLoading(false);
+                        return;
+                    }
+                    response = await searchByPersonCpf(personCpf, 5);
+                    break;
+
+                case 3: // Busca por Nome
+                    if (!personName) {
+                        setError('Por favor, digite um nome para busca.');
+                        setLoading(false);
+                        return;
+                    }
+                    response = await searchByPersonName(personName, 5);
+                    break;
+
+                default:
+                    setError('Método de busca inválido.');
                     setLoading(false);
                     return;
-                }
+            }
 
-                const response = await searchByImage(file, 5);
+            console.log("API Response:", response);
+            console.log("Results:", response.results);
 
-                console.log("API Response:", response);
-                console.log("Results:", response.results);
-
-                if (response.success) {
-                    setResults(response.results);
-                    setSuccess(true);
-                    if (response.results.length === 0) {
-                        setError('Nenhum resultado encontrado para esta imagem.');
-                    }
-                } else {
-                    setError(response.message || 'Erro desconhecido na busca.');
+            if (response.success) {
+                setResults(response.results);
+                setSuccess(true);
+                if (response.results.length === 0) {
+                    setError('Nenhum resultado encontrado para sua busca.');
                 }
             } else {
-                // Busca por ID
-                if (!personId) {
-                    setError('Por favor, digite um ID de pessoa válido.');
-                    setLoading(false);
-                    return;
-                }
-
-                const response = await searchByPersonId(personId, 5);
-
-                if (response.success) {
-                    setResults(response.results);
-                    setSuccess(true);
-                    if (response.results.length === 0) {
-                        setError('Nenhum resultado encontrado para este ID.');
-                    }
-                } else {
-                    setError(response.message || 'Erro desconhecido na busca.');
-                }
+                setError(response.message || 'Erro desconhecido na busca.');
             }
         } catch (err: any) {
             console.error('Erro na busca:', err);
@@ -152,7 +177,9 @@ const Search = () => {
                     sx={{ mb: 3 }}
                 >
                     <Tab icon={<UploadIcon />} label="Buscar por Imagem" />
-                    <Tab icon={<PersonIcon />} label="Buscar por ID" />
+                    <Tab icon={<PersonIcon />} label="Buscar por RG" />
+                    <Tab icon={<PersonIcon />} label="Buscar por CPF" />
+                    <Tab icon={<PersonIcon />} label="Buscar por Nome" />
                 </Tabs>
 
                 {searchMethod === 0 ? (
@@ -220,22 +247,22 @@ const Search = () => {
                             )}
                         </Grid>
                     </Box>
-                ) : (
+                ) : searchMethod === 1 ? (
                     <Box>
                         <Typography variant="body1" gutterBottom>
-                            Digite o ID da pessoa para buscar faces similares no sistema.
+                            Digite o RG da pessoa para buscar faces similares no sistema.
                         </Typography>
 
                         <Grid container spacing={3} alignItems="center">
                             <Grid item xs={12} md={6}>
                                 <TextField
-                                    label="ID da Pessoa"
+                                    label="RG da Pessoa"
                                     variant="outlined"
                                     fullWidth
                                     value={personId}
                                     onChange={(e) => setPersonId(e.target.value)}
-                                    placeholder="Ex: 000000012345"
-                                    helperText="Digite o ID de 12 dígitos da pessoa"
+                                    placeholder="Ex: 12345"
+                                    helperText="Digite o RG da pessoa"
                                 />
                             </Grid>
 
@@ -249,7 +276,75 @@ const Search = () => {
                                     fullWidth
                                     sx={{ height: 56 }}
                                 >
-                                    {loading ? 'Buscando...' : 'Buscar Faces Similares'}
+                                    {loading ? 'Buscando...' : 'Buscar'}
+                                </Button>
+                            </Grid>
+                        </Grid>
+                    </Box>
+                ) : searchMethod === 2 ? (
+                    <Box>
+                        <Typography variant="body1" gutterBottom>
+                            Digite o CPF da pessoa para buscar faces similares no sistema.
+                        </Typography>
+
+                        <Grid container spacing={3} alignItems="center">
+                            <Grid item xs={12} md={6}>
+                                <TextField
+                                    label="CPF da Pessoa"
+                                    variant="outlined"
+                                    fullWidth
+                                    value={personCpf}
+                                    onChange={(e) => setPersonCpf(e.target.value)}
+                                    placeholder="Ex: 000.000.000-00"
+                                    helperText="Digite o CPF da pessoa no formato 000.000.000-00"
+                                />
+                            </Grid>
+
+                            <Grid item xs={12} md={6}>
+                                <Button
+                                    variant="contained"
+                                    color="primary"
+                                    startIcon={<SearchIcon />}
+                                    onClick={handleSearch}
+                                    disabled={!personCpf || loading}
+                                    fullWidth
+                                    sx={{ height: 56 }}
+                                >
+                                    {loading ? 'Buscando...' : 'Buscar'}
+                                </Button>
+                            </Grid>
+                        </Grid>
+                    </Box>
+                ) : (
+                    <Box>
+                        <Typography variant="body1" gutterBottom>
+                            Digite o nome da pessoa para buscar faces similares no sistema.
+                        </Typography>
+
+                        <Grid container spacing={3} alignItems="center">
+                            <Grid item xs={12} md={6}>
+                                <TextField
+                                    label="Nome da Pessoa"
+                                    variant="outlined"
+                                    fullWidth
+                                    value={personName}
+                                    onChange={(e) => setPersonName(e.target.value)}
+                                    placeholder="Ex: João da Silva"
+                                    helperText="Digite o nome ou parte do nome da pessoa"
+                                />
+                            </Grid>
+
+                            <Grid item xs={12} md={6}>
+                                <Button
+                                    variant="contained"
+                                    color="primary"
+                                    startIcon={<SearchIcon />}
+                                    onClick={handleSearch}
+                                    disabled={!personName || loading}
+                                    fullWidth
+                                    sx={{ height: 56 }}
+                                >
+                                    {loading ? 'Buscando...' : 'Buscar'}
                                 </Button>
                             </Grid>
                         </Grid>
