@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import {
     Box,
     Typography,
@@ -27,6 +27,17 @@ import {
     DialogContent,
     DialogActions,
     Avatar,
+    FormControlLabel,
+    Switch,
+    Tabs,
+    Tab,
+    TableContainer,
+    Table,
+    TableHead,
+    TableBody,
+    TableRow,
+    TableCell,
+    Pagination,
 } from '@mui/material';
 import {
     CloudUpload as UploadIcon,
@@ -37,15 +48,21 @@ import {
     Image as ImageIcon,
     Person as PersonIcon,
     Info as InfoIcon,
+    ViewList as ViewListIcon,
+    ViewModule as ViewModuleIcon,
 } from '@mui/icons-material';
 import { useDropzone } from 'react-dropzone';
 import { api } from '../services/api';
 import { uploadImage, batchProcess } from '../services/personService';
 
+// Constante para definir o limite de miniaturas a serem exibidas
+const THUMBNAIL_THRESHOLD = 50;
+const ITEMS_PER_PAGE = 20;
+
 interface UploadedFile {
     id: string;
     file: File;
-    preview: string;
+    preview?: string; // Tornando opcional
     status: 'pending' | 'processing' | 'success' | 'error';
     progress: number;
     error?: string;
@@ -61,6 +78,15 @@ interface BatchProcessResult {
     details: any[];
 }
 
+// Interface para acompanhar o progresso total do upload
+interface UploadProgress {
+    totalFiles: number;
+    processed: number;
+    successful: number;
+    failed: number;
+    overallProgress: number;
+}
+
 const Upload = () => {
     const [activeStep, setActiveStep] = useState(0);
     const [files, setFiles] = useState<UploadedFile[]>([]);
@@ -72,16 +98,86 @@ const Upload = () => {
     const [selectedFile, setSelectedFile] = useState<UploadedFile | null>(null);
     const [detailsOpen, setDetailsOpen] = useState(false);
 
+    // Novos estados para otimização
+    const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+    const [showThumbnails, setShowThumbnails] = useState(true);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [tabValue, setTabValue] = useState(0);
+    const [uploadProgress, setUploadProgress] = useState<UploadProgress>({
+        totalFiles: 0,
+        processed: 0,
+        successful: 0,
+        failed: 0,
+        overallProgress: 0
+    });
+
+    // Determinar se estamos lidando com um grande volume de arquivos
+    const isLargeFileSet = files.length > THUMBNAIL_THRESHOLD;
+
+    // Calcular arquivos paginados
+    const paginatedFiles = useCallback(() => {
+        const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+        const endIndex = startIndex + ITEMS_PER_PAGE;
+        return files.slice(startIndex, endIndex);
+    }, [files, currentPage]);
+
+    // Atualizar o progresso geral
+    useEffect(() => {
+        if (files.length > 0) {
+            const processed = files.filter(f => f.status === 'success' || f.status === 'error').length;
+            const successful = files.filter(f => f.status === 'success').length;
+            const failed = files.filter(f => f.status === 'error').length;
+            const totalProgress = files.reduce((sum, file) => sum + file.progress, 0);
+            const overallProgress = files.length > 0 ? totalProgress / files.length : 0;
+
+            setUploadProgress({
+                totalFiles: files.length,
+                processed,
+                successful,
+                failed,
+                overallProgress
+            });
+        } else {
+            setUploadProgress({
+                totalFiles: 0,
+                processed: 0,
+                successful: 0,
+                failed: 0,
+                overallProgress: 0
+            });
+        }
+    }, [files]);
+
     const onDrop = useCallback((acceptedFiles: File[]) => {
+        // Verificar se estamos adicionando muitos arquivos
+        const exceedsThreshold = acceptedFiles.length + files.length > THUMBNAIL_THRESHOLD;
+
         const newFiles = acceptedFiles.map(file => ({
             id: Math.random().toString(36).substring(2, 9),
             file,
-            preview: URL.createObjectURL(file),
+            // Só gerar preview se não exceder o limite ou se thumbnails estiverem habilitados
+            preview: (!exceedsThreshold || showThumbnails) ? URL.createObjectURL(file) : undefined,
             status: 'pending' as const,
             progress: 0,
         }));
 
+        // Se exceder o limite, sugerir desabilitar thumbnails
+        if (exceedsThreshold && showThumbnails) {
+            setShowThumbnails(false);
+        }
+
         setFiles(prev => [...prev, ...newFiles]);
+    }, [files, showThumbnails]);
+
+    // Cleanup de objetos URL quando componente for desmontado
+    useEffect(() => {
+        return () => {
+            files.forEach(file => {
+                if (file.preview) {
+                    URL.revokeObjectURL(file.preview);
+                }
+            });
+        };
     }, []);
 
     const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -93,23 +189,67 @@ const Upload = () => {
     });
 
     const removeFile = (id: string) => {
+        const fileToRemove = files.find(file => file.id === id);
+        if (fileToRemove?.preview) {
+            URL.revokeObjectURL(fileToRemove.preview);
+        }
         setFiles(prev => prev.filter(file => file.id !== id));
     };
 
     const resetUpload = () => {
+        // Limpar os URL objects
+        files.forEach(file => {
+            if (file.preview) {
+                URL.revokeObjectURL(file.preview);
+            }
+        });
+
         setFiles([]);
         setActiveStep(0);
         setBatchResult(null);
         setError(null);
         setSuccess(null);
+        setCurrentPage(1);
     };
 
     const handleNext = () => {
         setActiveStep(prev => prev + 1);
+        setCurrentPage(1); // Reset pagination on step change
     };
 
     const handleBack = () => {
         setActiveStep(prev => prev - 1);
+        setCurrentPage(1); // Reset pagination on step change
+    };
+
+    const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+        setTabValue(newValue);
+    };
+
+    const handlePageChange = (event: React.ChangeEvent<unknown>, value: number) => {
+        setCurrentPage(value);
+    };
+
+    const toggleViewMode = () => {
+        setViewMode(prev => prev === 'grid' ? 'list' : 'grid');
+    };
+
+    const toggleThumbnails = () => {
+        // Se estiver habilitando thumbnails, gere-os para arquivos existentes que não têm
+        if (!showThumbnails) {
+            setFiles(prev =>
+                prev.map(file => {
+                    if (!file.preview) {
+                        return {
+                            ...file,
+                            preview: URL.createObjectURL(file.file)
+                        };
+                    }
+                    return file;
+                })
+            );
+        }
+        setShowThumbnails(prev => !prev);
     };
 
     const uploadFiles = async () => {
@@ -126,6 +266,7 @@ const Upload = () => {
             // Processar cada arquivo individualmente
             const updatedFiles = [...files];
             const results = [];
+            let processedCount = 0;
 
             for (let i = 0; i < updatedFiles.length; i++) {
                 const file = updatedFiles[i];
@@ -177,7 +318,14 @@ const Upload = () => {
                         message: err.response?.data?.detail || 'Erro ao processar o arquivo.'
                     });
                 } finally {
+                    processedCount++;
                     setFiles([...updatedFiles]);
+
+                    // Atualizar o status periodicamente (a cada 10 arquivos ou no final)
+                    if (processedCount % 10 === 0 || processedCount === updatedFiles.length) {
+                        const successCount = results.filter(r => r.success).length;
+                        setSuccess(`Progresso: ${processedCount} de ${updatedFiles.length} arquivos processados (${successCount} com sucesso)`);
+                    }
                 }
             }
 
@@ -221,11 +369,144 @@ const Upload = () => {
     };
 
     const showFileDetails = (file: UploadedFile) => {
+        // Se não tiver preview e for necessário, criar um
+        if (!file.preview && file.file) {
+            file.preview = URL.createObjectURL(file.file);
+        }
+
         setSelectedFile(file);
         setDetailsOpen(true);
     };
 
+    const totalPages = Math.ceil(files.length / ITEMS_PER_PAGE);
     const steps = ['Selecionar Arquivos', 'Processar Imagens', 'Resultados'];
+
+    const renderFileItem = (file: UploadedFile) => {
+        return viewMode === 'grid' ? (
+            <Grid item xs={12} sm={6} md={4} lg={3} key={file.id}>
+                <Card>
+                    {showThumbnails && file.preview ? (
+                        <CardMedia
+                            component="img"
+                            height="140"
+                            image={file.preview}
+                            alt={file.file.name}
+                        />
+                    ) : (
+                        <Box
+                            sx={{
+                                height: 140,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                bgcolor: 'rgba(0, 0, 0, 0.04)'
+                            }}
+                        >
+                            <ImageIcon sx={{ fontSize: 60, color: 'text.secondary' }} />
+                        </Box>
+                    )}
+                    <CardContent sx={{ py: 1 }}>
+                        <Typography variant="body2" noWrap title={file.file.name}>
+                            {file.file.name}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                            {(file.file.size / 1024).toFixed(1)} KB
+                        </Typography>
+                    </CardContent>
+                    <Box sx={{ display: 'flex', justifyContent: 'flex-end', p: 1 }}>
+                        <IconButton size="small" onClick={() => removeFile(file.id)}>
+                            <DeleteIcon fontSize="small" />
+                        </IconButton>
+                    </Box>
+                </Card>
+            </Grid>
+        ) : (
+            <ListItem key={file.id} divider>
+                <ListItemIcon>
+                    {showThumbnails && file.preview ? (
+                        <Avatar sx={{ width: 40, height: 40 }} src={file.preview} />
+                    ) : (
+                        <Avatar sx={{ width: 40, height: 40, bgcolor: 'rgba(0, 0, 0, 0.04)' }}>
+                            <ImageIcon sx={{ color: 'text.secondary' }} />
+                        </Avatar>
+                    )}
+                </ListItemIcon>
+                <ListItemText
+                    primary={file.file.name}
+                    secondary={`${(file.file.size / 1024).toFixed(1)} KB`}
+                />
+                <IconButton size="small" onClick={() => removeFile(file.id)}>
+                    <DeleteIcon fontSize="small" />
+                </IconButton>
+            </ListItem>
+        );
+    };
+
+    const renderFilesPreview = () => {
+        if (files.length === 0) {
+            return null;
+        }
+
+        return (
+            <Box>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                    <Typography variant="h6">
+                        {files.length} {files.length === 1 ? 'arquivo selecionado' : 'arquivos selecionados'}
+                    </Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                        <FormControlLabel
+                            control={
+                                <Switch
+                                    checked={showThumbnails}
+                                    onChange={toggleThumbnails}
+                                    disabled={loading}
+                                />
+                            }
+                            label="Miniaturas"
+                        />
+                        <IconButton onClick={toggleViewMode} disabled={loading}>
+                            {viewMode === 'grid' ? <ViewListIcon /> : <ViewModuleIcon />}
+                        </IconButton>
+                        <Button
+                            variant="outlined"
+                            startIcon={<DeleteIcon />}
+                            onClick={resetUpload}
+                            disabled={loading}
+                        >
+                            Limpar Tudo
+                        </Button>
+                    </Box>
+                </Box>
+
+                {isLargeFileSet && (
+                    <Alert severity="info" sx={{ mb: 2 }}>
+                        Grande volume de arquivos detectado ({files.length}). {showThumbnails ? 'Considere desativar as miniaturas para melhor desempenho.' : 'Miniaturas desativadas para melhor desempenho.'}
+                    </Alert>
+                )}
+
+                {viewMode === 'grid' ? (
+                    <Grid container spacing={2}>
+                        {paginatedFiles().map(file => renderFileItem(file))}
+                    </Grid>
+                ) : (
+                    <List>
+                        {paginatedFiles().map(file => renderFileItem(file))}
+                    </List>
+                )}
+
+                {totalPages > 1 && (
+                    <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
+                        <Pagination
+                            count={totalPages}
+                            page={currentPage}
+                            onChange={handlePageChange}
+                            color="primary"
+                        />
+                    </Box>
+                )}
+            </Box>
+        );
+    };
 
     return (
         <Box>
@@ -292,50 +573,7 @@ const Upload = () => {
                             </Typography>
                         </Box>
 
-                        {files.length > 0 && (
-                            <Box>
-                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                                    <Typography variant="h6">
-                                        {files.length} {files.length === 1 ? 'arquivo selecionado' : 'arquivos selecionados'}
-                                    </Typography>
-                                    <Button
-                                        variant="outlined"
-                                        startIcon={<DeleteIcon />}
-                                        onClick={resetUpload}
-                                    >
-                                        Limpar Tudo
-                                    </Button>
-                                </Box>
-
-                                <Grid container spacing={2}>
-                                    {files.map((file) => (
-                                        <Grid item xs={12} sm={6} md={4} lg={3} key={file.id}>
-                                            <Card>
-                                                <CardMedia
-                                                    component="img"
-                                                    height="140"
-                                                    image={file.preview}
-                                                    alt={file.file.name}
-                                                />
-                                                <CardContent sx={{ py: 1 }}>
-                                                    <Typography variant="body2" noWrap title={file.file.name}>
-                                                        {file.file.name}
-                                                    </Typography>
-                                                    <Typography variant="caption" color="text.secondary">
-                                                        {(file.file.size / 1024).toFixed(1)} KB
-                                                    </Typography>
-                                                </CardContent>
-                                                <Box sx={{ display: 'flex', justifyContent: 'flex-end', p: 1 }}>
-                                                    <IconButton size="small" onClick={() => removeFile(file.id)}>
-                                                        <DeleteIcon fontSize="small" />
-                                                    </IconButton>
-                                                </Box>
-                                            </Card>
-                                        </Grid>
-                                    ))}
-                                </Grid>
-                            </Box>
-                        )}
+                        {renderFilesPreview()}
 
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 3 }}>
                             <Button
@@ -362,38 +600,147 @@ const Upload = () => {
                             Processando Imagens
                         </Typography>
 
-                        <List>
-                            {files.map((file) => (
-                                <ListItem key={file.id} divider>
-                                    <ListItemIcon>
-                                        <Avatar sx={{ width: 40, height: 40 }} src={file.preview} />
-                                    </ListItemIcon>
-                                    <ListItemText
-                                        primary={file.file.name}
-                                        secondary={
-                                            file.status === 'success' ? 'Processado com sucesso' :
-                                                file.status === 'error' ? file.error :
-                                                    file.status === 'processing' ? 'Processando...' :
-                                                        'Aguardando processamento'
-                                        }
-                                    />
-                                    <Box sx={{ width: '40%', mr: 2 }}>
-                                        <LinearProgress
-                                            variant="determinate"
-                                            value={file.progress}
-                                            color={
-                                                file.status === 'success' ? 'success' :
-                                                    file.status === 'error' ? 'error' :
-                                                        'primary'
-                                            }
+                        {/* Progresso geral */}
+                        <Box sx={{ mb: 3 }}>
+                            <Grid container spacing={2}>
+                                <Grid item xs={12} sm={6} md={3}>
+                                    <Card>
+                                        <CardContent>
+                                            <Typography color="text.secondary" gutterBottom>
+                                                Total
+                                            </Typography>
+                                            <Typography variant="h5">
+                                                {uploadProgress.totalFiles}
+                                            </Typography>
+                                        </CardContent>
+                                    </Card>
+                                </Grid>
+                                <Grid item xs={12} sm={6} md={3}>
+                                    <Card>
+                                        <CardContent>
+                                            <Typography color="text.secondary" gutterBottom>
+                                                Processados
+                                            </Typography>
+                                            <Typography variant="h5">
+                                                {uploadProgress.processed}
+                                            </Typography>
+                                        </CardContent>
+                                    </Card>
+                                </Grid>
+                                <Grid item xs={12} sm={6} md={3}>
+                                    <Card>
+                                        <CardContent>
+                                            <Typography color="text.secondary" gutterBottom>
+                                                Sucesso
+                                            </Typography>
+                                            <Typography variant="h5" color="success.main">
+                                                {uploadProgress.successful}
+                                            </Typography>
+                                        </CardContent>
+                                    </Card>
+                                </Grid>
+                                <Grid item xs={12} sm={6} md={3}>
+                                    <Card>
+                                        <CardContent>
+                                            <Typography color="text.secondary" gutterBottom>
+                                                Falhas
+                                            </Typography>
+                                            <Typography variant="h5" color="error.main">
+                                                {uploadProgress.failed}
+                                            </Typography>
+                                        </CardContent>
+                                    </Card>
+                                </Grid>
+                            </Grid>
+                        </Box>
+
+                        {/* Barra de progresso geral */}
+                        <Box sx={{ mb: 3 }}>
+                            <Typography variant="body2" sx={{ mb: 1 }}>
+                                Progresso geral: {Math.round(uploadProgress.overallProgress)}%
+                            </Typography>
+                            <LinearProgress
+                                variant="determinate"
+                                value={uploadProgress.overallProgress}
+                                sx={{ height: 10, borderRadius: 5 }}
+                            />
+                        </Box>
+
+                        {/* Abas para diferentes visualizações */}
+                        <Box sx={{ mb: 2 }}>
+                            <Tabs value={tabValue} onChange={handleTabChange}>
+                                <Tab label="Resumo" />
+                                <Tab label="Detalhes" />
+                            </Tabs>
+                        </Box>
+
+                        {tabValue === 0 ? (
+                            <Alert severity="info">
+                                Processando {uploadProgress.totalFiles} arquivos.
+                                {uploadProgress.processed} processados ({uploadProgress.successful} com sucesso, {uploadProgress.failed} falhas).
+                                {loading ? ' Processamento em andamento...' : ' Processamento concluído.'}
+                            </Alert>
+                        ) : (
+                            <Box>
+                                <TableContainer>
+                                    <Table size="small">
+                                        <TableHead>
+                                            <TableRow>
+                                                <TableCell>Arquivo</TableCell>
+                                                <TableCell>Status</TableCell>
+                                                <TableCell>Progresso</TableCell>
+                                                <TableCell>Ações</TableCell>
+                                            </TableRow>
+                                        </TableHead>
+                                        <TableBody>
+                                            {paginatedFiles().map((file) => (
+                                                <TableRow key={file.id}>
+                                                    <TableCell>{file.file.name}</TableCell>
+                                                    <TableCell>
+                                                        {file.status === 'success' ? (
+                                                            <Chip size="small" icon={<CheckCircleIcon />} label="Sucesso" color="success" />
+                                                        ) : file.status === 'error' ? (
+                                                            <Chip size="small" icon={<ErrorIcon />} label="Erro" color="error" />
+                                                        ) : file.status === 'processing' ? (
+                                                            <Chip size="small" icon={<CircularProgress size={16} />} label="Processando" color="primary" />
+                                                        ) : (
+                                                            <Chip size="small" label="Pendente" color="default" />
+                                                        )}
+                                                    </TableCell>
+                                                    <TableCell width="30%">
+                                                        <LinearProgress
+                                                            variant="determinate"
+                                                            value={file.progress}
+                                                            color={
+                                                                file.status === 'success' ? 'success' :
+                                                                    file.status === 'error' ? 'error' :
+                                                                        'primary'
+                                                            }
+                                                        />
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <IconButton size="small" onClick={() => showFileDetails(file)}>
+                                                            <InfoIcon fontSize="small" />
+                                                        </IconButton>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                </TableContainer>
+
+                                {totalPages > 1 && (
+                                    <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
+                                        <Pagination
+                                            count={totalPages}
+                                            page={currentPage}
+                                            onChange={handlePageChange}
+                                            color="primary"
                                         />
                                     </Box>
-                                    {file.status === 'success' && <CheckCircleIcon color="success" />}
-                                    {file.status === 'error' && <ErrorIcon color="error" />}
-                                    {file.status === 'processing' && <CircularProgress size={24} />}
-                                </ListItem>
-                            ))}
-                        </List>
+                                )}
+                            </Box>
+                        )}
 
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 3 }}>
                             <Button
@@ -465,43 +812,197 @@ const Upload = () => {
                             Detalhes dos Arquivos
                         </Typography>
 
-                        <List>
-                            {files.map((file) => (
-                                <ListItem key={file.id} divider>
-                                    <ListItemIcon>
-                                        <Avatar sx={{ width: 40, height: 40 }} src={file.preview} />
-                                    </ListItemIcon>
-                                    <ListItemText
-                                        primary={file.file.name}
-                                        secondary={
-                                            file.status === 'success' ?
-                                                `ID: ${file.result?.person_id} | CPF: ${file.result?.cpf} | Nome: ${file.result?.name}` :
-                                                file.error || 'Erro no processamento'
-                                        }
-                                    />
-                                    {file.status === 'success' ? (
-                                        <Chip
-                                            icon={<CheckCircleIcon />}
-                                            label="Sucesso"
-                                            color="success"
-                                            variant="outlined"
-                                            sx={{ mr: 1 }}
+                        {/* Resumo em vez de lista detalhada para grandes conjuntos */}
+                        {isLargeFileSet ? (
+                            <Box>
+                                <Alert severity="info" sx={{ mb: 2 }}>
+                                    Processados {files.length} arquivos no total. Clique em "Exportar Resultados" para obter um relatório detalhado.
+                                </Alert>
+
+                                {/* Adicionar botão para exportar resultados */}
+                                <Button
+                                    variant="outlined"
+                                    sx={{ mb: 2 }}
+                                    onClick={() => {
+                                        // Implementação para exportar CSV ou JSON com os resultados
+                                        const results = files.map(file => ({
+                                            name: file.file.name,
+                                            size: file.file.size,
+                                            status: file.status,
+                                            error: file.error || '',
+                                            person_id: file.result?.person_id || '',
+                                            cpf: file.result?.cpf || '',
+                                            person_name: file.result?.name || ''
+                                        }));
+
+                                        // Criar arquivo CSV
+                                        const headers = ['name', 'size', 'status', 'error', 'person_id', 'cpf', 'person_name'];
+                                        const csvContent = [
+                                            headers.join(','),
+                                            ...results.map(item =>
+                                                headers.map(header =>
+                                                    JSON.stringify(item[header as keyof typeof item] || '')
+                                                ).join(',')
+                                            )
+                                        ].join('\n');
+
+                                        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                                        const url = URL.createObjectURL(blob);
+                                        const link = document.createElement('a');
+                                        link.setAttribute('href', url);
+                                        link.setAttribute('download', `resultados_${new Date().toISOString().split('T')[0]}.csv`);
+                                        link.style.visibility = 'hidden';
+                                        document.body.appendChild(link);
+                                        link.click();
+                                        document.body.removeChild(link);
+                                    }}
+                                >
+                                    Exportar Resultados (CSV)
+                                </Button>
+
+                                {/* Mostrar tabs com resumo de sucessos e erros */}
+                                <Tabs value={tabValue} onChange={handleTabChange} sx={{ mb: 2 }}>
+                                    <Tab label="Resumo" />
+                                    <Tab label="Sucessos" />
+                                    <Tab label="Falhas" />
+                                </Tabs>
+
+                                {tabValue === 0 && (
+                                    <Alert severity="success" sx={{ mb: 2 }}>
+                                        {files.filter(f => f.status === 'success').length} arquivos processados com sucesso.
+                                        {files.filter(f => f.status === 'error').length > 0 &&
+                                            ` ${files.filter(f => f.status === 'error').length} arquivos com erro.`}
+                                    </Alert>
+                                )}
+
+                                {tabValue === 1 && files.filter(f => f.status === 'success').length > 0 && (
+                                    <TableContainer>
+                                        <Table size="small">
+                                            <TableHead>
+                                                <TableRow>
+                                                    <TableCell>Arquivo</TableCell>
+                                                    <TableCell>ID da Pessoa</TableCell>
+                                                    <TableCell>CPF</TableCell>
+                                                    <TableCell>Nome</TableCell>
+                                                </TableRow>
+                                            </TableHead>
+                                            <TableBody>
+                                                {paginatedFiles()
+                                                    .filter(f => f.status === 'success')
+                                                    .map((file) => (
+                                                        <TableRow key={file.id}>
+                                                            <TableCell>{file.file.name}</TableCell>
+                                                            <TableCell>{file.result?.person_id || '-'}</TableCell>
+                                                            <TableCell>{file.result?.cpf || '-'}</TableCell>
+                                                            <TableCell>{file.result?.name || '-'}</TableCell>
+                                                        </TableRow>
+                                                    ))}
+                                            </TableBody>
+                                        </Table>
+
+                                        {totalPages > 1 && (
+                                            <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
+                                                <Pagination
+                                                    count={Math.ceil(files.filter(f => f.status === 'success').length / ITEMS_PER_PAGE)}
+                                                    page={currentPage}
+                                                    onChange={handlePageChange}
+                                                    color="primary"
+                                                />
+                                            </Box>
+                                        )}
+                                    </TableContainer>
+                                )}
+
+                                {tabValue === 2 && files.filter(f => f.status === 'error').length > 0 && (
+                                    <TableContainer>
+                                        <Table size="small">
+                                            <TableHead>
+                                                <TableRow>
+                                                    <TableCell>Arquivo</TableCell>
+                                                    <TableCell>Erro</TableCell>
+                                                </TableRow>
+                                            </TableHead>
+                                            <TableBody>
+                                                {paginatedFiles()
+                                                    .filter(f => f.status === 'error')
+                                                    .map((file) => (
+                                                        <TableRow key={file.id}>
+                                                            <TableCell>{file.file.name}</TableCell>
+                                                            <TableCell>{file.error || 'Erro desconhecido'}</TableCell>
+                                                        </TableRow>
+                                                    ))}
+                                            </TableBody>
+                                        </Table>
+
+                                        {Math.ceil(files.filter(f => f.status === 'error').length / ITEMS_PER_PAGE) > 1 && (
+                                            <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
+                                                <Pagination
+                                                    count={Math.ceil(files.filter(f => f.status === 'error').length / ITEMS_PER_PAGE)}
+                                                    page={currentPage}
+                                                    onChange={handlePageChange}
+                                                    color="primary"
+                                                />
+                                            </Box>
+                                        )}
+                                    </TableContainer>
+                                )}
+                            </Box>
+                        ) : (
+                            <List>
+                                {paginatedFiles().map((file) => (
+                                    <ListItem key={file.id} divider>
+                                        <ListItemIcon>
+                                            {showThumbnails && file.preview ? (
+                                                <Avatar sx={{ width: 40, height: 40 }} src={file.preview} />
+                                            ) : (
+                                                <Avatar sx={{ width: 40, height: 40, bgcolor: 'grey.200' }}>
+                                                    <ImageIcon />
+                                                </Avatar>
+                                            )}
+                                        </ListItemIcon>
+                                        <ListItemText
+                                            primary={file.file.name}
+                                            secondary={
+                                                file.status === 'success' ?
+                                                    `ID: ${file.result?.person_id} | CPF: ${file.result?.cpf} | Nome: ${file.result?.name}` :
+                                                    file.error || 'Erro no processamento'
+                                            }
                                         />
-                                    ) : (
-                                        <Chip
-                                            icon={<ErrorIcon />}
-                                            label="Erro"
-                                            color="error"
-                                            variant="outlined"
-                                            sx={{ mr: 1 }}
-                                        />
-                                    )}
-                                    <IconButton size="small" onClick={() => showFileDetails(file)}>
-                                        <InfoIcon />
-                                    </IconButton>
-                                </ListItem>
-                            ))}
-                        </List>
+                                        {file.status === 'success' ? (
+                                            <Chip
+                                                icon={<CheckCircleIcon />}
+                                                label="Sucesso"
+                                                color="success"
+                                                variant="outlined"
+                                                sx={{ mr: 1 }}
+                                            />
+                                        ) : (
+                                            <Chip
+                                                icon={<ErrorIcon />}
+                                                label="Erro"
+                                                color="error"
+                                                variant="outlined"
+                                                sx={{ mr: 1 }}
+                                            />
+                                        )}
+                                        <IconButton size="small" onClick={() => showFileDetails(file)}>
+                                            <InfoIcon />
+                                        </IconButton>
+                                    </ListItem>
+                                ))}
+                            </List>
+                        )}
+
+                        {totalPages > 1 && !isLargeFileSet && (
+                            <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
+                                <Pagination
+                                    count={totalPages}
+                                    page={currentPage}
+                                    onChange={handlePageChange}
+                                    color="primary"
+                                />
+                            </Box>
+                        )}
 
                         <Divider sx={{ my: 3 }} />
 
@@ -579,19 +1080,36 @@ const Upload = () => {
                     {selectedFile && (
                         <Grid container spacing={2}>
                             <Grid item xs={12} sm={6}>
-                                <Box
-                                    component="img"
-                                    src={selectedFile.preview}
-                                    alt={selectedFile.file.name}
-                                    sx={{
-                                        width: '100%',
-                                        height: 'auto',
-                                        maxHeight: 300,
-                                        objectFit: 'contain',
-                                        border: '1px solid #ddd',
-                                        borderRadius: 1,
-                                    }}
-                                />
+                                {selectedFile.preview ? (
+                                    <Box
+                                        component="img"
+                                        src={selectedFile.preview}
+                                        alt={selectedFile.file.name}
+                                        sx={{
+                                            width: '100%',
+                                            height: 'auto',
+                                            maxHeight: 300,
+                                            objectFit: 'contain',
+                                            border: '1px solid #ddd',
+                                            borderRadius: 1,
+                                        }}
+                                    />
+                                ) : (
+                                    <Box
+                                        sx={{
+                                            width: '100%',
+                                            height: 200,
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            border: '1px solid #ddd',
+                                            borderRadius: 1,
+                                            bgcolor: 'rgba(0, 0, 0, 0.04)'
+                                        }}
+                                    >
+                                        <ImageIcon sx={{ fontSize: 80, color: 'text.secondary' }} />
+                                    </Box>
+                                )}
                             </Grid>
                             <Grid item xs={12} sm={6}>
                                 <Typography variant="subtitle1" gutterBottom>
