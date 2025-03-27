@@ -183,9 +183,24 @@ const Search = () => {
             console.log("Results:", response.results);
 
             if (response.success) {
-                setResults(response.results);
+                // Agrupar resultados por person_id, mantendo apenas o resultado com maior similaridade
+                const groupedResults: { [key: string]: SearchResult } = {};
+
+                response.results.forEach(result => {
+                    if (!groupedResults[result.person_id] ||
+                        result.similarity > groupedResults[result.person_id].similarity) {
+                        groupedResults[result.person_id] = result;
+                    }
+                });
+
+                // Converter de volta para array e ordenar por similaridade
+                const uniqueResults = Object.values(groupedResults).sort(
+                    (a, b) => b.similarity - a.similarity
+                );
+
+                setResults(uniqueResults);
                 setSuccess(true);
-                if (response.results.length === 0) {
+                if (uniqueResults.length === 0) {
                     setError('Nenhum resultado encontrado para sua busca.');
                 }
             } else {

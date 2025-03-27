@@ -68,7 +68,13 @@ def search_by_person_id(
             "results": []
         }
     
-    if not person.file_path or not os.path.exists(person.file_path):
+    # Buscar a imagem mais recente desta pessoa
+    from ...models.person import PersonImage
+    latest_image = db.query(PersonImage).filter(
+        PersonImage.person_id == person.person_id
+    ).order_by(PersonImage.processed_date.desc()).first()
+    
+    if not latest_image or not latest_image.file_path or not os.path.exists(latest_image.file_path):
         return {
             "success": False,
             "message": "Imagem da pessoa não encontrada no sistema.",
@@ -78,7 +84,7 @@ def search_by_person_id(
     # Buscar faces similares
     from ...core.dependencies import get_file_processor
     file_processor = get_file_processor()
-    result = file_processor.search_similar_faces(person.file_path, k)
+    result = file_processor.search_similar_faces(latest_image.file_path, k)
     return result
 
 @router.post("/search-by-cpf/", response_model=SearchResponse)
@@ -100,7 +106,13 @@ def search_by_cpf(
             "results": []
         }
     
-    if not person.file_path or not os.path.exists(person.file_path):
+    # Buscar a imagem mais recente desta pessoa
+    from ...models.person import PersonImage
+    latest_image = db.query(PersonImage).filter(
+        PersonImage.person_id == person.person_id
+    ).order_by(PersonImage.processed_date.desc()).first()
+    
+    if not latest_image or not latest_image.file_path or not os.path.exists(latest_image.file_path):
         return {
             "success": False,
             "message": "Imagem da pessoa não encontrada no sistema.",
@@ -110,7 +122,7 @@ def search_by_cpf(
     # Buscar faces similares
     from ...core.dependencies import get_file_processor
     file_processor = get_file_processor()
-    result = file_processor.search_similar_faces(person.file_path, k)
+    result = file_processor.search_similar_faces(latest_image.file_path, k)
     return result
 
 @router.post("/search-by-name/", response_model=SearchResponse)
@@ -132,7 +144,13 @@ def search_by_name(
             "results": []
         }
     
-    if not person.file_path or not os.path.exists(person.file_path):
+    # Buscar a imagem mais recente desta pessoa
+    from ...models.person import PersonImage
+    latest_image = db.query(PersonImage).filter(
+        PersonImage.person_id == person.person_id
+    ).order_by(PersonImage.processed_date.desc()).first()
+    
+    if not latest_image or not latest_image.file_path or not os.path.exists(latest_image.file_path):
         return {
             "success": False,
             "message": "Imagem da pessoa não encontrada no sistema.",
@@ -142,5 +160,5 @@ def search_by_name(
     # Buscar faces similares
     from ...core.dependencies import get_file_processor
     file_processor = get_file_processor()
-    result = file_processor.search_similar_faces(person.file_path, k)
+    result = file_processor.search_similar_faces(latest_image.file_path, k)
     return result
