@@ -61,6 +61,19 @@ export interface BatchProcessResponse {
     }>;
 }
 
+export interface PersonImage {
+    id: number;
+    person_id: string;
+    filename: string;
+    original_filename: string;
+    processed: boolean;
+    processed_date: string | null;
+    face_detected: boolean;
+    faiss_id: number | null;
+    created_at: string;
+    updated_at: string;
+}
+
 // Obter lista de pessoas com filtros opcionais
 export const getPersons = async (
     skip = 0,
@@ -114,4 +127,14 @@ export const uploadImage = async (file: File) => {
 export const batchProcess = async () => {
     const response = await api.post<BatchProcessResponse>('/persons/batch-process/');
     return response.data;
+};
+
+export const getPersonImages = async (personId: string) => {
+    try {
+        const response = await api.get<PersonImage[]>(`/persons/${personId}/images`);
+        return response.data;
+    } catch (error) {
+        console.error('Erro ao buscar imagens da pessoa:', error);
+        throw error;
+    }
 };

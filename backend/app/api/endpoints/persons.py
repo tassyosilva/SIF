@@ -5,10 +5,11 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 import os
 import shutil
+from datetime import datetime
 
 from ...database import get_db
-from ...models.person import Person
-from ...schemas.person import Person as PersonSchema, PersonCreate, PersonUpdate
+from ...models.person import Person, PersonImage
+from ...schemas.person import Person as PersonSchema, PersonCreate, PersonUpdate, PersonImage as PersonImageSchema
 from ...core.file_processor import FileProcessor
 from ...config import settings
 
@@ -117,31 +118,31 @@ async def upload_file(file: UploadFile = File(...), db: Session = Depends(get_db
         # Criar nova pessoa
         person_data = {
             "person_id": result["person_id"],
-            "cpf": result["cpf"],  # Adicionar CPF aqui
+            "cpf": result["cpf"],
             "name": result["person_name"],
             "origin_code": result["origin"][:3],
             "origin": result["origin"],
-            "filename": result["filename"],
-            "file_path": file_path,
-            "processed": True,
-            "processed_date": result.get("processed_date"),
-            "face_detected": True,
-            "faiss_id": result.get("faiss_id")
         }
         db_person = Person(**person_data)
         db.add(db_person)
         db.commit()
-        db.refresh(db_person)
-    else:
-        # Atualizar pessoa existente
-        db_person.filename = result["filename"]
-        db_person.file_path = file_path
-        db_person.processed = True
-        db_person.processed_date = result.get("processed_date")
-        db_person.face_detected = True
-        db_person.faiss_id = result.get("faiss_id")
-        db.commit()
-        db.refresh(db_person)
+    
+    # Criar nova entrada de imagem
+    from ...models.person import PersonImage
+    image_data = {
+        "person_id": db_person.person_id,
+        "filename": result["filename"],
+        "original_filename": result["original_filename"],
+        "file_path": os.path.join(settings.PROCESSED_DIR, result["filename"]),
+        "processed": True,
+        "processed_date": datetime.now(),
+        "face_detected": True,
+        "faiss_id": result.get("faiss_id")
+    }
+    
+    db_image = PersonImage(**image_data)
+    db.add(db_image)
+    db.commit()
     
     return {
         "success": True,
@@ -150,7 +151,8 @@ async def upload_file(file: UploadFile = File(...), db: Session = Depends(get_db
             "id": db_person.id,
             "person_id": db_person.person_id,
             "name": db_person.name,
-            "origin": db_person.origin
+            "origin": db_person.origin,
+            "image_id": db_image.id
         }
     }
 
@@ -169,46 +171,74 @@ def batch_process(db: Session = Depends(get_db)):
             if detail["success"]:
                 # Verificar se a pessoa já existe no banco de dados
                 db_person = db.query(Person).filter(Person.person_id == detail["person_id"]).first()
-                file_path = os.path.join(settings.UPLOAD_DIR, detail["filename"])
                 
                 if not db_person:
                     # Criar nova pessoa
                     person_data = {
                         "person_id": detail["person_id"],
-                        "cpf": detail["cpf"],  # Adicionar CPF aqui
+                        "cpf": detail["cpf"],
                         "name": detail["person_name"],
                         "origin_code": detail["origin"][:3],
                         "origin": detail["origin"],
-                        "filename": detail["filename"],
-                        "file_path": file_path,
-                        "processed": True,
-                        "processed_date": detail.get("processed_date"),
-                        "face_detected": True,
-                        "faiss_id": detail.get("faiss_id")
                     }
                     db_person = Person(**person_data)
                     db.add(db_person)
-                else:
-                    # Atualizar pessoa existente
-                    db_person.filename = detail["filename"]
-                    db_person.file_path = file_path
-                    db_person.processed = True
-                    db_person.face_detected = True
-                    db_person.faiss_id = detail.get("faiss_id")
+                    db.commit()
+                
+                # Criar nova entrada de imagem
+                from ...models.person import PersonImage
+                image_data = {
+                    "person_id": db_person.person_id,
+                    "filename": detail["filename"],
+                    "original_filename": detail["original_filename"],
+                    "file_path": os.path.join(settings.PROCESSED_DIR, detail["filename"]),
+                    "processed": True,
+                    "processed_date": datetime.now(),
+                    "face_detected": True,
+                    "faiss_id": detail.get("faiss_id")
+                }
+                
+                db_image = PersonImage(**image_data)
+                db.add(db_image)
                 db.commit()
     
     return result
 
 @router.get("/{person_id}/image")
-def get_person_image(person_id: str, db: Session = Depends(get_db)):
+def get_person_image(person_id: str, image_id: Optional[int] = None, db: Session = Depends(get_db)):
     """
-    Retorna a imagem de uma pessoa.
+    Retorna a imagem de uma pessoa. Se image_id for fornecido, retorna essa imagem específica.
+    Caso contrário, retorna a imagem mais recente.
     """
     person = db.query(Person).filter(Person.person_id == person_id).first()
     if person is None:
         raise HTTPException(status_code=404, detail="Person not found")
     
-    if not person.file_path or not os.path.exists(person.file_path):
+    # Buscar a imagem específica ou a mais recente
+    if image_id:
+        image = db.query(PersonImage).filter(
+            PersonImage.person_id == person_id,
+            PersonImage.id == image_id
+        ).first()
+    else:
+        # Buscar a imagem mais recente
+        image = db.query(PersonImage).filter(
+            PersonImage.person_id == person_id
+        ).order_by(PersonImage.processed_date.desc()).first()
+    
+    if not image or not image.file_path or not os.path.exists(image.file_path):
         raise HTTPException(status_code=404, detail="Image not found")
     
-    return FileResponse(person.file_path)
+    return FileResponse(image.file_path)
+
+@router.get("/{person_id}/images", response_model=List[PersonImageSchema])
+def get_person_images(person_id: str, db: Session = Depends(get_db)):
+    """
+    Retorna todas as imagens de uma pessoa.
+    """
+    person = db.query(Person).filter(Person.person_id == person_id).first()
+    if person is None:
+        raise HTTPException(status_code=404, detail="Person not found")
+    
+    images = db.query(PersonImage).filter(PersonImage.person_id == person_id).all()
+    return images

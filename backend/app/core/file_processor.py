@@ -130,14 +130,14 @@ class FileProcessor:
             Dicionário com os resultados do processamento
         """
         try:
-            filename = os.path.basename(image_path)
-            file_info = self.parse_filename(filename)
+            original_filename = os.path.basename(image_path)
+            file_info = self.parse_filename(original_filename)
             
             if not file_info["valid"]:
-                logger.warning(f"Skipping invalid file: {filename}")
+                logger.warning(f"Skipping invalid file: {original_filename}")
                 return {
                     "success": False,
-                    "filename": filename,
+                    "filename": original_filename,
                     "error": "Invalid filename format"
                 }
             
@@ -145,49 +145,55 @@ class FileProcessor:
             embedding = self.face_processor.extract_embedding(image_path)
             
             if embedding is None:
-                logger.warning(f"No face detected in {filename}")
+                logger.warning(f"No face detected in {original_filename}")
                 return {
                     "success": False,
-                    "filename": filename,
+                    "filename": original_filename,
                     "error": "No face detected"
                 }
+            
+            # Gerar um nome de arquivo único com timestamp
+            timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+            base_name, ext = os.path.splitext(original_filename)
+            unique_filename = f"{base_name}_{timestamp}{ext}"
             
             # Criar metadados para o índice FAISS
             metadata = {
                 "person_id": file_info["person_id"],
-                "cpf": file_info["cpf"],  # Adicionar CPF aos metadados
+                "cpf": file_info["cpf"],
                 "person_name": file_info["person_name"],
                 "origin": file_info["origin"],
-                "filename": filename,
+                "filename": unique_filename,
+                "original_filename": original_filename,
                 "processed_date": datetime.now().isoformat()
             }
             
             # Adicionar embedding ao índice FAISS
             faiss_id = self.faiss_index.add_embedding(embedding, metadata)
             
-            # Mover a imagem para o diretório de processados
-            processed_path = os.path.join(self.processed_dir, filename)
+            # Mover a imagem para o diretório de processados com o nome único
+            processed_path = os.path.join(self.processed_dir, unique_filename)
             shutil.copy2(image_path, processed_path)
             
-            # Alinhar a face e salvar
+            # Alinhar a face e salvar com nome único
             aligned_dir = os.path.join(self.processed_dir, "aligned")
             os.makedirs(aligned_dir, exist_ok=True)
-            aligned_path = os.path.join(aligned_dir, filename)
+            aligned_path = os.path.join(aligned_dir, unique_filename)
             self.face_processor.align_face(image_path, aligned_path)
             
-            logger.info(f"Successfully processed {filename}, FAISS ID: {faiss_id}")
+            logger.info(f"Successfully processed {original_filename} as {unique_filename}, FAISS ID: {faiss_id}")
             
             # Salvar o índice FAISS após cada processamento
             index_path = os.path.join(self.processed_dir, "faiss_index.bin")
             metadata_path = os.path.join(self.processed_dir, "faiss_metadata.pkl")
             self.faiss_index.save(index_path, metadata_path)
-            logger.info(f"FAISS index saved after processing {filename}")
             
             return {
                 "success": True,
-                "filename": filename,
+                "filename": unique_filename,
+                "original_filename": original_filename,
                 "person_id": file_info["person_id"],
-                "cpf": file_info["cpf"],  # Adicionado o campo CPF no retorno
+                "cpf": file_info["cpf"],
                 "person_name": file_info["person_name"],
                 "origin": file_info["origin"],
                 "faiss_id": faiss_id
@@ -197,7 +203,7 @@ class FileProcessor:
             logger.error(f"Error processing image {image_path}: {str(e)}")
             return {
                 "success": False,
-                "filename": filename if 'filename' in locals() else os.path.basename(image_path),
+                "filename": original_filename if 'original_filename' in locals() else os.path.basename(image_path),
                 "error": str(e)
             }
     

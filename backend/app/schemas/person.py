@@ -12,36 +12,75 @@ class PersonBase(BaseModel):
     origin_code: str = Field(..., description="Código de origem (001, 002, etc.)")
     origin: str = Field(..., description="Origem (idnet, cacador, etc.)")
 
+class PersonImageBase(BaseModel):
+    """
+    Esquema base para imagens de pessoas.
+    """
+    filename: str = Field(..., description="Nome do arquivo processado")
+    original_filename: str = Field(..., description="Nome do arquivo original")
+    file_path: str = Field(..., description="Caminho do arquivo processado")
+    processed: bool = Field(True, description="Status de processamento")
+    face_detected: bool = Field(True, description="Se uma face foi detectada")
+    faiss_id: Optional[int] = Field(None, description="ID no índice FAISS")
+
 class PersonCreate(PersonBase):
     """
     Esquema para criação de pessoas.
     """
-    filename: str = Field(..., description="Nome do arquivo original")
-    file_path: str = Field(..., description="Caminho do arquivo original")
+    pass
+
+class PersonImageCreate(PersonImageBase):
+    """
+    Esquema para criação de imagens de pessoas.
+    """
+    person_id: str = Field(..., description="RG da pessoa associada")
+    processed_date: Optional[datetime] = Field(None, description="Data de processamento")
 
 class PersonUpdate(BaseModel):
     """
     Esquema para atualização de pessoas.
     """
     name: Optional[str] = Field(None, description="Nome da pessoa")
+    cpf: Optional[str] = Field(None, description="CPF da pessoa")
+    origin_code: Optional[str] = Field(None, description="Código de origem")
+    origin: Optional[str] = Field(None, description="Origem")
+
+class PersonImageUpdate(BaseModel):
+    """
+    Esquema para atualização de imagens de pessoas.
+    """
     processed: Optional[bool] = Field(None, description="Status de processamento")
     processed_date: Optional[datetime] = Field(None, description="Data de processamento")
     face_detected: Optional[bool] = Field(None, description="Se uma face foi detectada")
     faiss_id: Optional[int] = Field(None, description="ID no índice FAISS")
+
+class PersonImageInDB(PersonImageBase):
+    """
+    Esquema para imagens de pessoas no banco de dados.
+    """
+    id: int
+    person_id: str
+    processed_date: Optional[datetime]
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        orm_mode = True
+
+class PersonImage(PersonImageInDB):
+    """
+    Esquema para resposta de imagens de pessoas.
+    """
+    pass
 
 class PersonInDB(PersonBase):
     """
     Esquema para pessoas no banco de dados.
     """
     id: int
-    filename: str
-    file_path: str
-    processed: bool
-    processed_date: Optional[datetime]
-    face_detected: bool
-    faiss_id: Optional[int]
     created_at: datetime
     updated_at: datetime
+    images: List[PersonImage] = []
 
     class Config:
         orm_mode = True
@@ -60,7 +99,7 @@ class SearchResult(BaseModel):
     distance: float
     similarity: float
     person_id: str
-    cpf: str 
+    cpf: str
     person_name: str
     origin: str
     filename: str
@@ -85,3 +124,12 @@ class BatchProcessResponse(BaseModel):
     failed: int
     elapsed_time: float
     details: List[dict] = []
+
+class UploadResponse(BaseModel):
+    """
+    Esquema para resposta de upload de arquivo.
+    """
+    success: bool
+    message: str
+    person: dict
+    error: Optional[str] = None

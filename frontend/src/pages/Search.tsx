@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
     Box,
     Typography,
@@ -21,12 +21,15 @@ import {
     DialogTitle,
     DialogContent,
     DialogActions,
+    IconButton
 } from '@mui/material';
 import {
     Search as SearchIcon,
     Upload as UploadIcon,
     Person as PersonIcon,
     CheckCircle as CheckCircleIcon,
+    ArrowBackIos as ArrowBackIcon,
+    ArrowForwardIos as ArrowForwardIcon
 } from '@mui/icons-material';
 import { searchByImage, searchByPersonId, SearchResult } from '../services/recognitionService';
 
@@ -35,6 +38,9 @@ import {
     searchByPersonCpf,
     searchByPersonName
 } from '../services/recognitionService';
+
+// Importe a nova função getPersonImages
+import { getPersonImages, PersonImage } from '../services/personService';
 
 const Search = () => {
     const [searchMethod, setSearchMethod] = useState(0);
@@ -49,6 +55,11 @@ const Search = () => {
     const [success, setSuccess] = useState(false);
     const [detailsOpen, setDetailsOpen] = useState(false);
     const [selectedResult, setSelectedResult] = useState<SearchResult | null>(null);
+
+    // Novo estado para armazenar as imagens da pessoa
+    const [personImages, setPersonImages] = useState<PersonImage[]>([]);
+    const [currentImageIndex, setCurrentImageIndex] = useState(0);
+    const [loadingImages, setLoadingImages] = useState(false);
 
     // Função para formatar CPF
     const formatCPF = (value: string) => {
@@ -212,9 +223,38 @@ const Search = () => {
         return 'error.main';
     };
 
+    // Nova função para carregar todas as imagens de uma pessoa
+    const loadPersonImages = async (personId: string) => {
+        try {
+            setLoadingImages(true);
+            const images = await getPersonImages(personId);
+            setPersonImages(images);
+            setCurrentImageIndex(0);
+        } catch (error) {
+            console.error('Erro ao carregar imagens da pessoa:', error);
+            setPersonImages([]);
+        } finally {
+            setLoadingImages(false);
+        }
+    };
+
     const handleOpenDetails = (result: SearchResult) => {
         setSelectedResult(result);
         setDetailsOpen(true);
+        // Carregar todas as imagens da pessoa quando o modal é aberto
+        loadPersonImages(result.person_id);
+    };
+
+    const handleNextImage = () => {
+        if (currentImageIndex < personImages.length - 1) {
+            setCurrentImageIndex(prev => prev + 1);
+        }
+    };
+
+    const handlePrevImage = () => {
+        if (currentImageIndex > 0) {
+            setCurrentImageIndex(prev => prev - 1);
+        }
     };
 
     return (
@@ -507,7 +547,7 @@ const Search = () => {
                 </Box>
             )}
 
-            {/* Modal de detalhes */}
+            {/* Modal de detalhes com suporte a múltiplas imagens */}
             <Dialog
                 open={detailsOpen}
                 onClose={() => setDetailsOpen(false)}
@@ -521,22 +561,69 @@ const Search = () => {
                     {selectedResult && (
                         <Grid container spacing={3}>
                             <Grid item xs={12} md={6}>
-                                <Box
-                                    component="img"
-                                    src={`http://localhost:8000/api/persons/${selectedResult.person_id}/image`}
-                                    alt={selectedResult.person_name}
-                                    sx={{
-                                        width: '100%',
-                                        maxHeight: 400,
-                                        objectFit: 'contain',
-                                        border: '1px solid #ddd',
-                                        borderRadius: 1,
-                                    }}
-                                    onError={(e: any) => {
-                                        e.target.onerror = null;
-                                        e.target.src = 'https://via.placeholder.com/300x400?text=Imagem+não+disponível';
-                                    }}
-                                />
+                                {loadingImages ? (
+                                    <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '300px' }}>
+                                        <CircularProgress />
+                                    </Box>
+                                ) : personImages.length > 0 ? (
+                                    <Box sx={{ position: 'relative' }}>
+                                        <Box
+                                            component="img"
+                                            src={`http://localhost:8000/api/persons/${selectedResult.person_id}/image?image_id=${personImages[currentImageIndex].id}`}
+                                            alt={selectedResult.person_name}
+                                            sx={{
+                                                width: '100%',
+                                                maxHeight: 400,
+                                                objectFit: 'contain',
+                                                border: '1px solid #ddd',
+                                                borderRadius: 1,
+                                            }}
+                                            onError={(e: any) => {
+                                                e.target.onerror = null;
+                                                e.target.src = 'https://via.placeholder.com/300x400?text=Imagem+não+disponível';
+                                            }}
+                                        />
+
+                                        {personImages.length > 1 && (
+                                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 2 }}>
+                                                <IconButton
+                                                    onClick={handlePrevImage}
+                                                    disabled={currentImageIndex === 0}
+                                                >
+                                                    <ArrowBackIcon />
+                                                </IconButton>
+
+                                                <Typography>
+                                                    {currentImageIndex + 1} / {personImages.length}
+                                                </Typography>
+
+                                                <IconButton
+                                                    onClick={handleNextImage}
+                                                    disabled={currentImageIndex === personImages.length - 1}
+                                                >
+                                                    <ArrowForwardIcon />
+                                                </IconButton>
+                                            </Box>
+                                        )}
+                                    </Box>
+                                ) : (
+                                    <Box
+                                        component="img"
+                                        src={`http://localhost:8000/api/persons/${selectedResult.person_id}/image`}
+                                        alt={selectedResult.person_name}
+                                        sx={{
+                                            width: '100%',
+                                            maxHeight: 400,
+                                            objectFit: 'contain',
+                                            border: '1px solid #ddd',
+                                            borderRadius: 1,
+                                        }}
+                                        onError={(e: any) => {
+                                            e.target.onerror = null;
+                                            e.target.src = 'https://via.placeholder.com/300x400?text=Imagem+não+disponível';
+                                        }}
+                                    />
+                                )}
                             </Grid>
                             <Grid item xs={12} md={6}>
                                 <Typography variant="h5" gutterBottom>
@@ -557,6 +644,12 @@ const Search = () => {
                                 <Typography variant="body1">
                                     <strong>Similaridade:</strong> {(selectedResult.similarity * 100).toFixed(1)}%
                                 </Typography>
+
+                                {personImages.length > 0 && (
+                                    <Typography variant="body1" sx={{ mt: 1 }}>
+                                        <strong>Total de imagens:</strong> {personImages.length}
+                                    </Typography>
+                                )}
 
                                 <Box sx={{ mt: 2, display: 'flex', alignItems: 'center' }}>
                                     <Typography variant="body2" sx={{ mr: 1 }}>
