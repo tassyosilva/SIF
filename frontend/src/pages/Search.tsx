@@ -144,6 +144,26 @@ const Search = () => {
                         return;
                     }
                     response = await searchByImage(file, 5);
+
+                    // Para busca por imagem, mantemos o comportamento atual
+                    if (response.success) {
+                        // Agrupar resultados por person_id, mantendo apenas o resultado com maior similaridade
+                        const groupedResults: { [key: string]: SearchResult } = {};
+
+                        response.results.forEach(result => {
+                            if (!groupedResults[result.person_id] ||
+                                result.similarity > groupedResults[result.person_id].similarity) {
+                                groupedResults[result.person_id] = result;
+                            }
+                        });
+
+                        // Converter de volta para array e ordenar por similaridade
+                        const uniqueResults = Object.values(groupedResults).sort(
+                            (a, b) => b.similarity - a.similarity
+                        );
+
+                        setResults(uniqueResults);
+                    }
                     break;
 
                 case 1: // Busca por RG
@@ -152,7 +172,24 @@ const Search = () => {
                         setLoading(false);
                         return;
                     }
-                    response = await searchByPersonId(personId, 5);
+                    response = await searchByPersonId(personId, 1); // Limitamos a 1 resultado
+
+                    // Para busca por RG, queremos apenas o resultado exato
+                    if (response.success && response.results.length > 0) {
+                        // Filtramos apenas o resultado com RG exato
+                        const exactMatches = response.results.filter(
+                            result => result.person_id === personId
+                        );
+
+                        // Se não houver correspondências exatas, mostramos uma mensagem
+                        if (exactMatches.length === 0) {
+                            setError('RG não encontrado no sistema.');
+                        } else {
+                            // Definimos similaridade como 1.0 (100%) para resultados exatos
+                            exactMatches.forEach(match => match.similarity = 1.0);
+                            setResults(exactMatches);
+                        }
+                    }
                     break;
 
                 case 2: // Busca por CPF
@@ -161,7 +198,24 @@ const Search = () => {
                         setLoading(false);
                         return;
                     }
-                    response = await searchByPersonCpf(personCpf, 5);
+                    response = await searchByPersonCpf(personCpf, 1); // Limitamos a 1 resultado
+
+                    // Para busca por CPF, queremos apenas o resultado exato
+                    if (response.success && response.results.length > 0) {
+                        // Filtramos apenas o resultado com CPF exato (considerando formatação)
+                        const exactMatches = response.results.filter(
+                            result => result.cpf === personCpf
+                        );
+
+                        // Se não houver correspondências exatas, mostramos uma mensagem
+                        if (exactMatches.length === 0) {
+                            setError('CPF não encontrado no sistema.');
+                        } else {
+                            // Definimos similaridade como 1.0 (100%) para resultados exatos
+                            exactMatches.forEach(match => match.similarity = 1.0);
+                            setResults(exactMatches);
+                        }
+                    }
                     break;
 
                 case 3: // Busca por Nome
@@ -171,6 +225,23 @@ const Search = () => {
                         return;
                     }
                     response = await searchByPersonName(personName, 5);
+
+                    // Para busca por nome, filtramos resultados para incluir apenas aqueles
+                    // que contêm o termo de pesquisa no nome
+                    if (response.success && response.results.length > 0) {
+                        const nameMatches = response.results.filter(
+                            result => result.person_name.toLowerCase().includes(personName.toLowerCase())
+                        );
+
+                        // Se não houver correspondências, mostramos uma mensagem
+                        if (nameMatches.length === 0) {
+                            setError('Nome não encontrado no sistema.');
+                        } else {
+                            // Definimos similaridade como 1.0 (100%) para resultados por nome
+                            nameMatches.forEach(match => match.similarity = 1.0);
+                            setResults(nameMatches);
+                        }
+                    }
                     break;
 
                 default:
@@ -183,24 +254,8 @@ const Search = () => {
             console.log("Results:", response.results);
 
             if (response.success) {
-                // Agrupar resultados por person_id, mantendo apenas o resultado com maior similaridade
-                const groupedResults: { [key: string]: SearchResult } = {};
-
-                response.results.forEach(result => {
-                    if (!groupedResults[result.person_id] ||
-                        result.similarity > groupedResults[result.person_id].similarity) {
-                        groupedResults[result.person_id] = result;
-                    }
-                });
-
-                // Converter de volta para array e ordenar por similaridade
-                const uniqueResults = Object.values(groupedResults).sort(
-                    (a, b) => b.similarity - a.similarity
-                );
-
-                setResults(uniqueResults);
                 setSuccess(true);
-                if (uniqueResults.length === 0) {
+                if (results.length === 0) {
                     setError('Nenhum resultado encontrado para sua busca.');
                 }
             } else {
