@@ -61,9 +61,19 @@ def search_by_person_id(
     # Buscar a pessoa no banco de dados
     person = db.query(Person).filter(Person.person_id == person_id).first()
     if not person:
-        raise HTTPException(status_code=404, detail="Person not found")
+        # Em vez de lançar exceção, retornar resposta com erro
+        return {
+            "success": False,
+            "message": "RG não encontrado no sistema.",
+            "results": []
+        }
+    
     if not person.file_path or not os.path.exists(person.file_path):
-        raise HTTPException(status_code=404, detail="Person image not found")
+        return {
+            "success": False,
+            "message": "Imagem da pessoa não encontrada no sistema.",
+            "results": []
+        }
 
     # Buscar faces similares
     from ...core.dependencies import get_file_processor
@@ -83,9 +93,19 @@ def search_by_cpf(
     # Buscar a pessoa no banco de dados
     person = db.query(Person).filter(Person.cpf == cpf).first()
     if not person:
-        raise HTTPException(status_code=404, detail="Person not found")
+        # Em vez de lançar exceção, retornar resposta com erro
+        return {
+            "success": False,
+            "message": "CPF não encontrado no sistema.",
+            "results": []
+        }
+    
     if not person.file_path or not os.path.exists(person.file_path):
-        raise HTTPException(status_code=404, detail="Person image not found")
+        return {
+            "success": False,
+            "message": "Imagem da pessoa não encontrada no sistema.",
+            "results": []
+        }
 
     # Buscar faces similares
     from ...core.dependencies import get_file_processor
@@ -105,9 +125,19 @@ def search_by_name(
     # Buscar a pessoa no banco de dados (usando LIKE para correspondência parcial)
     person = db.query(Person).filter(Person.name.ilike(f"%{name}%")).first()
     if not person:
-        raise HTTPException(status_code=404, detail="Person not found")
+        # Em vez de lançar exceção, retornar resposta com erro
+        return {
+            "success": False,
+            "message": "Nome não encontrado no sistema.",
+            "results": []
+        }
+    
     if not person.file_path or not os.path.exists(person.file_path):
-        raise HTTPException(status_code=404, detail="Person image not found")
+        return {
+            "success": False,
+            "message": "Imagem da pessoa não encontrada no sistema.",
+            "results": []
+        }
 
     # Buscar faces similares
     from ...core.dependencies import get_file_processor

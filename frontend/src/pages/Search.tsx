@@ -50,6 +50,45 @@ const Search = () => {
     const [detailsOpen, setDetailsOpen] = useState(false);
     const [selectedResult, setSelectedResult] = useState<SearchResult | null>(null);
 
+    // Função para formatar CPF
+    const formatCPF = (value: string) => {
+        // Remove caracteres não numéricos
+        const cpf = value.replace(/\D/g, '');
+
+        // Limita a 11 dígitos
+        const cpfLimited = cpf.slice(0, 11);
+
+        // Adiciona a formatação
+        if (cpfLimited.length <= 3) {
+            return cpfLimited;
+        } else if (cpfLimited.length <= 6) {
+            return `${cpfLimited.slice(0, 3)}.${cpfLimited.slice(3)}`;
+        } else if (cpfLimited.length <= 9) {
+            return `${cpfLimited.slice(0, 3)}.${cpfLimited.slice(3, 6)}.${cpfLimited.slice(6)}`;
+        } else {
+            return `${cpfLimited.slice(0, 3)}.${cpfLimited.slice(3, 6)}.${cpfLimited.slice(6, 9)}-${cpfLimited.slice(9)}`;
+        }
+    };
+
+    // Função para remover acentos
+    const removeAccents = (str: string) => {
+        return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    };
+
+    // Handlers para os campos de entrada
+    const handleRgChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        // Limita a 11 caracteres
+        setPersonId(e.target.value.slice(0, 11));
+    };
+
+    const handleCpfChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setPersonCpf(formatCPF(e.target.value));
+    };
+
+    const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setPersonName(removeAccents(e.target.value));
+    };
+
     const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
         setSearchMethod(newValue);
         resetSearch();
@@ -143,7 +182,24 @@ const Search = () => {
             }
         } catch (err: any) {
             console.error('Erro na busca:', err);
-            setError(err.response?.data?.detail || 'Ocorreu um erro ao processar sua busca. Por favor, tente novamente.');
+            // Se for erro 404, apresenta mensagem personalizada
+            if (err.response?.status === 404) {
+                switch (searchMethod) {
+                    case 1:
+                        setError('RG não encontrado no sistema.');
+                        break;
+                    case 2:
+                        setError('CPF não encontrado no sistema.');
+                        break;
+                    case 3:
+                        setError('Nome não encontrado no sistema.');
+                        break;
+                    default:
+                        setError('Registro não encontrado no sistema.');
+                }
+            } else {
+                setError(err.response?.data?.detail || 'Ocorreu um erro ao processar sua busca. Por favor, tente novamente.');
+            }
         } finally {
             setLoading(false);
         }
@@ -260,9 +316,10 @@ const Search = () => {
                                     variant="outlined"
                                     fullWidth
                                     value={personId}
-                                    onChange={(e) => setPersonId(e.target.value)}
+                                    onChange={handleRgChange}
                                     placeholder="Ex: 12345"
-                                    helperText="Digite o RG da pessoa"
+                                    helperText="Digite o RG da pessoa (máximo 11 caracteres)"
+                                    inputProps={{ maxLength: 11 }}
                                 />
                             </Grid>
 
@@ -294,7 +351,7 @@ const Search = () => {
                                     variant="outlined"
                                     fullWidth
                                     value={personCpf}
-                                    onChange={(e) => setPersonCpf(e.target.value)}
+                                    onChange={handleCpfChange}
                                     placeholder="Ex: 000.000.000-00"
                                     helperText="Digite o CPF da pessoa no formato 000.000.000-00"
                                 />
@@ -328,9 +385,9 @@ const Search = () => {
                                     variant="outlined"
                                     fullWidth
                                     value={personName}
-                                    onChange={(e) => setPersonName(e.target.value)}
-                                    placeholder="Ex: João da Silva"
-                                    helperText="Digite o nome ou parte do nome da pessoa"
+                                    onChange={handleNameChange}
+                                    placeholder="Ex: Joao da Silva"
+                                    helperText="Digite o nome sem acentos"
                                 />
                             </Grid>
 
