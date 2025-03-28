@@ -3,12 +3,13 @@ from sqlalchemy.orm import relationship
 from datetime import datetime
 from ..database import Base
 
+
 class Person(Base):
     """
     Modelo SQLAlchemy para armazenar informações de pessoas.
     """
     __tablename__ = "persons"
-    
+
     id = Column(Integer, primary_key=True, index=True)
     person_id = Column(String, unique=True, index=True)  # RG da pessoa (11 dígitos)
     cpf = Column(String, index=True)  # CPF modificado para não ser único
@@ -22,16 +23,17 @@ class Person(Base):
     # Metadados
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
+
     def __repr__(self):
         return f"<Person(id={self.id}, person_id={self.person_id}, name={self.name})>"
+
 
 class PersonImage(Base):
     """
     Modelo SQLAlchemy para armazenar imagens de pessoas.
     """
     __tablename__ = "person_images"
-    
+
     id = Column(Integer, primary_key=True, index=True)
     person_id = Column(String, ForeignKey("persons.person_id"), index=True)
     
@@ -54,6 +56,21 @@ class PersonImage(Base):
     # Metadados
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
+
     def __repr__(self):
         return f"<PersonImage(id={self.id}, person_id={self.person.person_id}, filename={self.filename})>"
+
+
+class BatchUpload(Base):
+    """
+    Modelo para rastrear uploads em lote
+    """
+    __tablename__ = "batch_uploads"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    batch_id = Column(String, unique=True, index=True)
+    status = Column(String, default='pending')  # pending, processing, completed, failed
+    total_files = Column(Integer)
+    processed_files = Column(Integer, default=0)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

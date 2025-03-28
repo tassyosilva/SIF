@@ -1,5 +1,5 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, File, UploadFile
-from fastapi.responses import FileResponse  # Nova importação
+from fastapi import APIRouter, Depends, HTTPException, Query, File, UploadFile, Form
+from fastapi.responses import FileResponse # Nova importação
 
 from sqlalchemy.orm import Session
 from typing import List, Optional
@@ -8,12 +8,21 @@ import shutil
 from datetime import datetime
 
 from ...database import get_db
-from ...models.person import Person, PersonImage
-from ...schemas.person import Person as PersonSchema, PersonCreate, PersonUpdate, PersonImage as PersonImageSchema
+from ...models.person import Person, PersonImage, BatchUpload
+from ...schemas.person import (
+    Person as PersonSchema, 
+    PersonCreate, 
+    PersonUpdate, 
+    PersonImage as PersonImageSchema,
+    BatchUploadStart,
+    BatchUploadComplete
+)
 from ...core.file_processor import FileProcessor
 from ...config import settings
 
+
 router = APIRouter()
+
 
 @router.get("/", response_model=List[PersonSchema])
 def get_persons(
@@ -36,6 +45,7 @@ def get_persons(
         query = query.filter(Person.origin == origin)
     return query.offset(skip).limit(limit).all()
 
+
 @router.get("/{person_id}", response_model=PersonSchema)
 def get_person(person_id: str, db: Session = Depends(get_db)):
     """
@@ -45,6 +55,7 @@ def get_person(person_id: str, db: Session = Depends(get_db)):
     if person is None:
         raise HTTPException(status_code=404, detail="Person not found")
     return person
+
 
 @router.post("/", response_model=PersonSchema)
 def create_person(person: PersonCreate, db: Session = Depends(get_db)):
@@ -60,6 +71,7 @@ def create_person(person: PersonCreate, db: Session = Depends(get_db)):
     db.refresh(db_person)
     return db_person
 
+
 @router.put("/{person_id}", response_model=PersonSchema)
 def update_person(person_id: str, person: PersonUpdate, db: Session = Depends(get_db)):
     """
@@ -74,6 +86,7 @@ def update_person(person_id: str, person: PersonUpdate, db: Session = Depends(ge
     db.refresh(db_person)
     return db_person
 
+
 @router.delete("/{person_id}")
 def delete_person(person_id: str, db: Session = Depends(get_db)):
     """
@@ -85,6 +98,7 @@ def delete_person(person_id: str, db: Session = Depends(get_db)):
     db.delete(db_person)
     db.commit()
     return {"message": "Person deleted successfully"}
+
 
 @router.post("/upload/")
 async def upload_file(file: UploadFile = File(...), db: Session = Depends(get_db)):
@@ -113,7 +127,6 @@ async def upload_file(file: UploadFile = File(...), db: Session = Depends(get_db
     
     # Verificar se a pessoa já existe no banco de dados
     db_person = db.query(Person).filter(Person.person_id == result["person_id"]).first()
-    
     if not db_person:
         # Criar nova pessoa
         person_data = {
@@ -139,7 +152,6 @@ async def upload_file(file: UploadFile = File(...), db: Session = Depends(get_db
         "face_detected": True,
         "faiss_id": result.get("faiss_id")
     }
-    
     db_image = PersonImage(**image_data)
     db.add(db_image)
     db.commit()
@@ -156,6 +168,7 @@ async def upload_file(file: UploadFile = File(...), db: Session = Depends(get_db
         }
     }
 
+
 @router.post("/batch-process/")
 def batch_process(db: Session = Depends(get_db)):
     """
@@ -171,7 +184,6 @@ def batch_process(db: Session = Depends(get_db)):
             if detail["success"]:
                 # Verificar se a pessoa já existe no banco de dados
                 db_person = db.query(Person).filter(Person.person_id == detail["person_id"]).first()
-                
                 if not db_person:
                     # Criar nova pessoa
                     person_data = {
@@ -197,12 +209,12 @@ def batch_process(db: Session = Depends(get_db)):
                     "face_detected": True,
                     "faiss_id": detail.get("faiss_id")
                 }
-                
                 db_image = PersonImage(**image_data)
                 db.add(db_image)
                 db.commit()
     
     return result
+
 
 @router.get("/{person_id}/image")
 def get_person_image(person_id: str, image_id: Optional[int] = None, db: Session = Depends(get_db)):
@@ -231,6 +243,7 @@ def get_person_image(person_id: str, image_id: Optional[int] = None, db: Session
     
     return FileResponse(image.file_path)
 
+
 @router.get("/{person_id}/images", response_model=List[PersonImageSchema])
 def get_person_images(person_id: str, db: Session = Depends(get_db)):
     """
@@ -242,3 +255,96 @@ def get_person_images(person_id: str, db: Session = Depends(get_db)):
     
     images = db.query(PersonImage).filter(PersonImage.person_id == person_id).all()
     return images
+
+
+@router.post("/batch-upload-start/")
+def start_batch_upload(
+    batch_info: BatchUploadStart, 
+    db: Session = Depends(get_db)
+):
+    """
+    Iniciar um upload em lote
+    """
+    batch_upload = BatchUpload(
+        batch_id=batch_info.batch_id, 
+        status='pending', 
+        total_files=batch_info.total_files
+    )
+    db.add(batch_upload)
+    db.commit()
+    return {"message": "Batch upload started", "batch_id": batch_upload.batch_id}
+
+
+@router.post("/upload-file/")
+async def upload_file(
+    file: UploadFile = File(...), 
+    batch_id: str = Form(...),
+    db: Session = Depends(get_db)
+):
+    """
+    Upload de arquivo individual para um lote
+    """
+    # Verificar se o lote existe e está pendente
+    batch = db.query(BatchUpload).filter(
+        BatchUpload.batch_id == batch_id, 
+        BatchUpload.status == 'pending'
+    ).first()
+    
+    if not batch:
+        raise HTTPException(status_code=400, detail="Invalid or completed batch")
+    
+    # Salvar arquivo
+    file_path = os.path.join(settings.UPLOAD_DIR, f"{batch_id}_{file.filename}")
+    with open(file_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+    
+    return {"message": "File uploaded successfully"}
+
+
+@router.post("/batch-upload-complete/")
+def complete_batch_upload(
+    batch_info: BatchUploadComplete,
+    db: Session = Depends(get_db)
+):
+    """
+    Processar todos os arquivos de um lote
+    """
+    batch = db.query(BatchUpload).filter(
+        BatchUpload.batch_id == batch_info.batch_id, 
+        BatchUpload.status == 'pending'
+    ).first()
+    
+    if not batch:
+        raise HTTPException(status_code=400, detail="Invalid batch")
+    
+    try:
+        # Processar todos os arquivos do lote
+        batch_files = [
+            f for f in os.listdir(settings.UPLOAD_DIR) 
+            if f.startswith(f"{batch_info.batch_id}_")
+        ]
+        
+        from ...core.dependencies import get_file_processor
+        file_processor = get_file_processor()
+        
+        for filename in batch_files:
+            full_path = os.path.join(settings.UPLOAD_DIR, filename)
+            file_processor.process_image(full_path)
+            
+            # Marcar progresso
+            batch.processed_files += 1
+        
+        # Marcar lote como concluído
+        batch.status = 'completed'
+        db.commit()
+        
+        return {
+            "message": "Batch upload processed successfully", 
+            "total_files": batch.total_files,
+            "processed_files": batch.processed_files
+        }
+    
+    except Exception as e:
+        batch.status = 'failed'
+        db.commit()
+        raise HTTPException(status_code=500, detail=str(e))

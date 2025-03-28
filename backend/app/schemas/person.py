@@ -2,6 +2,7 @@ from pydantic import BaseModel, Field
 from typing import Optional, List
 from datetime import datetime
 
+
 class PersonBase(BaseModel):
     """
     Esquema base para pessoas.
@@ -11,6 +12,7 @@ class PersonBase(BaseModel):
     name: str = Field(..., description="Nome da pessoa")
     origin_code: str = Field(..., description="Código de origem (001, 002, etc.)")
     origin: str = Field(..., description="Origem (idnet, cacador, etc.)")
+
 
 class PersonImageBase(BaseModel):
     """
@@ -23,11 +25,13 @@ class PersonImageBase(BaseModel):
     face_detected: bool = Field(True, description="Se uma face foi detectada")
     faiss_id: Optional[int] = Field(None, description="ID no índice FAISS")
 
+
 class PersonCreate(PersonBase):
     """
     Esquema para criação de pessoas.
     """
     pass
+
 
 class PersonImageCreate(PersonImageBase):
     """
@@ -35,6 +39,7 @@ class PersonImageCreate(PersonImageBase):
     """
     person_id: str = Field(..., description="RG da pessoa associada")
     processed_date: Optional[datetime] = Field(None, description="Data de processamento")
+
 
 class PersonUpdate(BaseModel):
     """
@@ -45,6 +50,7 @@ class PersonUpdate(BaseModel):
     origin_code: Optional[str] = Field(None, description="Código de origem")
     origin: Optional[str] = Field(None, description="Origem")
 
+
 class PersonImageUpdate(BaseModel):
     """
     Esquema para atualização de imagens de pessoas.
@@ -53,6 +59,7 @@ class PersonImageUpdate(BaseModel):
     processed_date: Optional[datetime] = Field(None, description="Data de processamento")
     face_detected: Optional[bool] = Field(None, description="Se uma face foi detectada")
     faiss_id: Optional[int] = Field(None, description="ID no índice FAISS")
+
 
 class PersonImageInDB(PersonImageBase):
     """
@@ -67,11 +74,13 @@ class PersonImageInDB(PersonImageBase):
     class Config:
         orm_mode = True
 
+
 class PersonImage(PersonImageInDB):
     """
     Esquema para resposta de imagens de pessoas.
     """
     pass
+
 
 class PersonInDB(PersonBase):
     """
@@ -85,11 +94,13 @@ class PersonInDB(PersonBase):
     class Config:
         orm_mode = True
 
+
 class Person(PersonInDB):
     """
     Esquema para resposta de pessoas.
     """
     pass
+
 
 class SearchResult(BaseModel):
     """
@@ -105,6 +116,7 @@ class SearchResult(BaseModel):
     filename: str
     processed_date: str
 
+
 class SearchResponse(BaseModel):
     """
     Esquema para resposta de busca.
@@ -113,6 +125,7 @@ class SearchResponse(BaseModel):
     query_image: str
     results: List[SearchResult] = []
     error: Optional[str] = None
+
 
 class BatchProcessResponse(BaseModel):
     """
@@ -125,6 +138,7 @@ class BatchProcessResponse(BaseModel):
     elapsed_time: float
     details: List[dict] = []
 
+
 class UploadResponse(BaseModel):
     """
     Esquema para resposta de upload de arquivo.
@@ -133,3 +147,18 @@ class UploadResponse(BaseModel):
     message: str
     person: dict
     error: Optional[str] = None
+
+
+class BatchUploadStart(BaseModel):
+    """
+    Esquema para iniciar um upload em lote.
+    """
+    batch_id: str
+    total_files: int
+
+
+class BatchUploadComplete(BaseModel):
+    """
+    Esquema para finalizar um upload em lote.
+    """
+    batch_id: str

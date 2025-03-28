@@ -1,4 +1,5 @@
 import { api } from './api';
+import { v4 as uuidv4 } from 'uuid';
 
 export interface Person {
     id: number;
@@ -137,4 +138,34 @@ export const getPersonImages = async (personId: string) => {
         console.error('Erro ao buscar imagens da pessoa:', error);
         throw error;
     }
+};
+
+// Iniciar um upload em lote
+export const startBatchUpload = async (totalFiles: number) => {
+    const batchId = uuidv4(); // Gerar ID único para o lote
+    const response = await api.post('/persons/batch-upload-start/', {
+        batch_id: batchId,
+        total_files: totalFiles
+    });
+    return response.data.batch_id;
+};
+
+// Fazer upload de um arquivo individual para um lote
+export const uploadFileInBatch = async (file: File, batchId: string) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('batch_id', batchId);
+
+    const response = await api.post('/persons/upload-file/', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+    });
+    return response.data;
+};
+
+// Finalizar e processar um lote de upload
+export const completeBatchUpload = async (batchId: string) => {
+    const response = await api.post('/persons/batch-upload-complete/', {
+        batch_id: batchId
+    });
+    return response.data;
 };
