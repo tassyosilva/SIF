@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
 import {
     Box,
@@ -28,7 +28,6 @@ import {
     Search as SearchIcon,
     Upload as UploadIcon,
     Person as PersonIcon,
-    CheckCircle as CheckCircleIcon,
     ArrowBackIos as ArrowBackIcon,
     ArrowForwardIos as ArrowForwardIcon
 } from '@mui/icons-material';
@@ -301,13 +300,6 @@ const Search = () => {
         } finally {
             setLoading(false);
         }
-    };
-
-    const getSimilarityColor = (similarity: number) => {
-        if (similarity >= 0.9) return 'success.main';
-        if (similarity >= 0.8) return 'info.main';
-        if (similarity >= 0.7) return 'warning.main';
-        return 'error.main';
     };
 
     // Nova função para carregar todas as imagens de uma pessoa
