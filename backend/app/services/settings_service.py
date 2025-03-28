@@ -6,36 +6,51 @@ from datetime import datetime
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from ..models.settings import Settings
-from ..models.person import Person
+from ..models.person import Person, PersonImage
 from ..schemas.settings import SettingsCreate, SettingsUpdate, SystemInfo
 from ..core.dependencies import rebuild_index_from_db
 
+logger = logging.getLogger(__name__)
+
 def get_settings(db: Session):
     """Obter configurações do sistema"""
-    # Tentar obter a primeira configuração
-    settings = db.query(Settings).first()
-    
-    # Se não existir, criar uma nova
-    if not settings:
+    try:
+        # Tentar obter a primeira configuração
+        settings = db.query(Settings).order_by(Settings.id).first()
+        
+        # Se não existir, criar uma nova
+        if not settings:
+            settings = Settings()
+            db.add(settings)
+            db.commit()
+            db.refresh(settings)
+        # Se existirem múltiplas, manter apenas a primeira e excluir as outras
+        else:
+            # Verificar se há mais registros além do primeiro
+            extra_settings = db.query(Settings).filter(Settings.id != settings.id).all()
+            if extra_settings:
+                # Registrar quantos registros extras encontrados
+                logger.warning(f"Encontrados {len(extra_settings)} registros extras na tabela settings. Mantendo apenas o ID {settings.id}.")
+                
+                # Excluir registros extras um por um para evitar erros
+                for extra in extra_settings:
+                    db.delete(extra)
+                    try:
+                        db.commit()
+                    except Exception as e:
+                        db.rollback()
+                        logger.error(f"Erro ao excluir configuração ID {extra.id}: {e}")
+        
+        return settings
+    except Exception as e:
+        logger.error(f"Erro ao obter configurações: {e}")
+        db.rollback()
+        # Criar uma nova configuração em caso de erro
         settings = Settings()
         db.add(settings)
         db.commit()
         db.refresh(settings)
-    # Se existirem múltiplas, manter apenas a primeira e excluir as outras
-    else:
-        # Verificar se há mais registros além do primeiro
-        extra_settings = db.query(Settings).offset(1).all()
-        if extra_settings:
-            # Registrar quantos registros extras encontrados
-            logger = logging.getLogger(__name__)
-            logger.warning(f"Encontrados {len(extra_settings)} registros extras na tabela settings. Mantendo apenas o primeiro.")
-            
-            # Excluir registros extras
-            for extra in extra_settings:
-                db.delete(extra)
-            db.commit()
-    
-    return settings
+        return settings
 
 def update_settings(db: Session, settings_update: SettingsUpdate):
     """Atualizar configurações do sistema"""
@@ -75,7 +90,8 @@ def get_system_info(db: Session) -> SystemInfo:
     
     # Contagem de pessoas e imagens
     total_persons = db.query(Person).count()
-    total_images = db.query(Person).filter(Person.face_detected == True).count()
+    # Corrigido: usar PersonImage em vez de Person.face_detected
+    total_images = db.query(PersonImage).filter(PersonImage.face_detected == True).count()
     
     # Tamanho do índice FAISS
     faiss_index_path = os.path.join(settings.processed_dir, "faiss_index.bin")
