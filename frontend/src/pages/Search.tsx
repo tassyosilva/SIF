@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+
 import {
     Box,
     Typography,
@@ -239,7 +240,21 @@ const Search = () => {
                         } else {
                             // Definimos similaridade como 1.0 (100%) para resultados por nome
                             nameMatches.forEach(match => match.similarity = 1.0);
-                            setResults(nameMatches);
+
+                            // ALTERAÇÃO 4: Agrupar resultados por nome
+                            // Agrupar resultados por person_id, mantendo apenas um resultado por pessoa
+                            const groupedResults: { [key: string]: SearchResult } = {};
+
+                            nameMatches.forEach(result => {
+                                if (!groupedResults[result.person_id]) {
+                                    groupedResults[result.person_id] = result;
+                                }
+                            });
+
+                            // Converter de volta para array
+                            const uniqueResults = Object.values(groupedResults);
+
+                            setResults(uniqueResults);
                         }
                     }
                     break;
@@ -254,8 +269,10 @@ const Search = () => {
             console.log("Results:", response.results);
 
             if (response.success) {
-                setSuccess(true);
-                if (results.length === 0) {
+                if (response.results.length > 0) {
+                    // ALTERAÇÃO 1: Corrigir mensagem de sucesso
+                    setSuccess(true);
+                } else {
                     setError('Nenhum resultado encontrado para sua busca.');
                 }
             } else {
@@ -325,6 +342,12 @@ const Search = () => {
         if (currentImageIndex > 0) {
             setCurrentImageIndex(prev => prev - 1);
         }
+    };
+
+    // Função para verificar se deve mostrar a similaridade com base no método de busca
+    const shouldShowSimilarity = (method: number) => {
+        // ALTERAÇÃO 3: Mostrar similaridade apenas para busca por imagem (método 0)
+        return method === 0;
     };
 
     return (
@@ -530,6 +553,12 @@ const Search = () => {
                     </Alert>
                 )}
 
+                {success && results.length > 0 && (
+                    <Alert severity="success" sx={{ mt: 3 }}>
+                        Busca realizada com sucesso.
+                    </Alert>
+                )}
+
                 {success && results.length === 0 && (
                     <Alert severity="info" sx={{ mt: 3 }}>
                         Nenhum resultado encontrado para sua busca.
@@ -562,11 +591,13 @@ const Search = () => {
                                             <Typography variant="h6" component="div">
                                                 {result.person_name}
                                             </Typography>
-                                            <Chip
-                                                label={`${(result.similarity * 100).toFixed(1)}%`}
-                                                color={result.similarity >= 0.9 ? "success" : result.similarity >= 0.8 ? "primary" : "warning"}
-                                                size="small"
-                                            />
+                                            {shouldShowSimilarity(searchMethod) && (
+                                                <Chip
+                                                    label={`${(result.similarity * 100).toFixed(1)}%`}
+                                                    color={result.similarity >= 0.9 ? "success" : result.similarity >= 0.8 ? "primary" : "warning"}
+                                                    size="small"
+                                                />
+                                            )}
                                         </Box>
 
                                         <Typography variant="body2" color="text.secondary" gutterBottom>
@@ -580,23 +611,25 @@ const Search = () => {
                                             Origem: {result.origin}
                                         </Typography>
 
-                                        <Box sx={{ mt: 2, display: 'flex', alignItems: 'center' }}>
-                                            <Typography variant="body2" color="text.secondary" sx={{ mr: 1 }}>
-                                                Similaridade:
-                                            </Typography>
-                                            <Box sx={{ width: '100%', mr: 1 }}>
-                                                <LinearProgress
-                                                    variant="determinate"
-                                                    value={result.similarity * 100}
-                                                    color={
-                                                        result.similarity >= 0.9 ? "success" :
-                                                            result.similarity >= 0.8 ? "primary" :
-                                                                result.similarity >= 0.7 ? "warning" : "error"
-                                                    }
-                                                    sx={{ height: 8, borderRadius: 5 }}
-                                                />
+                                        {shouldShowSimilarity(searchMethod) && (
+                                            <Box sx={{ mt: 2, display: 'flex', alignItems: 'center' }}>
+                                                <Typography variant="body2" color="text.secondary" sx={{ mr: 1 }}>
+                                                    Similaridade:
+                                                </Typography>
+                                                <Box sx={{ width: '100%', mr: 1 }}>
+                                                    <LinearProgress
+                                                        variant="determinate"
+                                                        value={result.similarity * 100}
+                                                        color={
+                                                            result.similarity >= 0.9 ? "success" :
+                                                                result.similarity >= 0.8 ? "primary" :
+                                                                    result.similarity >= 0.7 ? "warning" : "error"
+                                                        }
+                                                        sx={{ height: 8, borderRadius: 5 }}
+                                                    />
+                                                </Box>
                                             </Box>
-                                        </Box>
+                                        )}
                                     </CardContent>
                                     <CardActions>
                                         <Button
@@ -606,9 +639,7 @@ const Search = () => {
                                         >
                                             Ver Detalhes
                                         </Button>
-                                        <Button size="small" color="secondary">
-                                            Comparar
-                                        </Button>
+                                        {/* ALTERAÇÃO 2: Botão "Comparar" removido */}
                                     </CardActions>
                                 </Card>
                             </Grid>
@@ -711,9 +742,13 @@ const Search = () => {
                                 <Typography variant="body1">
                                     <strong>Origem:</strong> {selectedResult.origin}
                                 </Typography>
-                                <Typography variant="body1">
-                                    <strong>Similaridade:</strong> {(selectedResult.similarity * 100).toFixed(1)}%
-                                </Typography>
+
+                                {/* ALTERAÇÃO 3: Mostrar similaridade apenas para busca por imagem */}
+                                {shouldShowSimilarity(searchMethod) && (
+                                    <Typography variant="body1">
+                                        <strong>Similaridade:</strong> {(selectedResult.similarity * 100).toFixed(1)}%
+                                    </Typography>
+                                )}
 
                                 {personImages.length > 0 && (
                                     <Typography variant="body1" sx={{ mt: 1 }}>
@@ -721,23 +756,26 @@ const Search = () => {
                                     </Typography>
                                 )}
 
-                                <Box sx={{ mt: 2, display: 'flex', alignItems: 'center' }}>
-                                    <Typography variant="body2" sx={{ mr: 1 }}>
-                                        Similaridade:
-                                    </Typography>
-                                    <Box sx={{ width: '100%', mr: 1 }}>
-                                        <LinearProgress
-                                            variant="determinate"
-                                            value={selectedResult.similarity * 100}
-                                            color={
-                                                selectedResult.similarity >= 0.9 ? "success" :
-                                                    selectedResult.similarity >= 0.8 ? "primary" :
-                                                        selectedResult.similarity >= 0.7 ? "warning" : "error"
-                                            }
-                                            sx={{ height: 8, borderRadius: 5 }}
-                                        />
+                                {/* ALTERAÇÃO 3: Mostrar barra de similaridade apenas para busca por imagem */}
+                                {shouldShowSimilarity(searchMethod) && (
+                                    <Box sx={{ mt: 2, display: 'flex', alignItems: 'center' }}>
+                                        <Typography variant="body2" sx={{ mr: 1 }}>
+                                            Similaridade:
+                                        </Typography>
+                                        <Box sx={{ width: '100%', mr: 1 }}>
+                                            <LinearProgress
+                                                variant="determinate"
+                                                value={selectedResult.similarity * 100}
+                                                color={
+                                                    selectedResult.similarity >= 0.9 ? "success" :
+                                                        selectedResult.similarity >= 0.8 ? "primary" :
+                                                            selectedResult.similarity >= 0.7 ? "warning" : "error"
+                                                }
+                                                sx={{ height: 8, borderRadius: 5 }}
+                                            />
+                                        </Box>
                                     </Box>
-                                </Box>
+                                )}
                             </Grid>
                         </Grid>
                     )}
