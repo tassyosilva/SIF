@@ -1,4 +1,5 @@
 import os
+import threading
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -8,9 +9,10 @@ from .api.router import api_router
 from .config import settings
 from .database import engine, Base
 from .core.dependencies import init_processors
+from .tasks.scheduled_tasks import start_scheduler
 
 # Importar todos os modelos para garantir que sejam registrados com Base
-from .models import Person, Settings  # Importe todos os seus modelos aqui
+from .models import Person, Settings # Importe todos os seus modelos aqui
 
 # Configurar logging
 logging.basicConfig(
@@ -45,7 +47,6 @@ try:
     inspector = inspect(engine)
     tables = inspector.get_table_names()
     logger.info(f"Tables in database after creation: {tables}")
-    
 except Exception as e:
     logger.error(f"Error with database: {e}")
 
@@ -65,7 +66,7 @@ app = FastAPI(
 # Configurar CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Em produção, especificar origens permitidas
+    allow_origins=["*"], # Em produção, especificar origens permitidas
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -79,11 +80,15 @@ async def startup_event():
     """
     Inicializa os processadores quando a aplicação é iniciada.
     """
+    # Existentes configurações de inicialização
     init_processors(
         upload_dir=settings.UPLOAD_DIR,
         processed_dir=settings.PROCESSED_DIR,
         models_dir=settings.MODELS_DIR
     )
+    
+    # Iniciar scheduler em uma thread separada
+    threading.Thread(target=start_scheduler, daemon=True).start()
 
 @app.get("/")
 def read_root():

@@ -1,5 +1,12 @@
 import { api } from './api';
 import { v4 as uuidv4 } from 'uuid';
+import axios, { AxiosProgressEvent, AxiosError } from 'axios';
+
+// Interface para representar a resposta de erro da API
+interface ApiErrorResponse {
+    detail?: string;
+    message?: string;
+}
 
 export interface Person {
     id: number;
@@ -140,32 +147,82 @@ export const getPersonImages = async (personId: string) => {
     }
 };
 
+// Constantes para o mecanismo de retry
+const MAX_RETRIES = 3;
+const RETRY_DELAY = 1000; // 1 segundo
+
+// Função de upload com mecanismo de retry
+async function uploadWithRetry(
+    file: File,
+    batchId: string,
+    onProgressUpdate?: (progress: number) => void,
+    retriesLeft = MAX_RETRIES
+): Promise<any> {
+    try {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('batch_id', batchId);
+
+        const response = await api.post('/persons/upload-file/', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+            timeout: 5 * 60 * 1000, // 5 minutos
+            onUploadProgress: (progressEvent: AxiosProgressEvent) => {
+                if (progressEvent.total) {
+                    const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+                    onProgressUpdate?.(percentCompleted);
+                }
+            }
+        });
+
+        return response.data;
+    } catch (error) {
+        if (retriesLeft > 0) {
+            console.warn(`Tentativa de retry para ${file.name}. Restam ${retriesLeft} tentativas`);
+            await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
+            return uploadWithRetry(file, batchId, onProgressUpdate, retriesLeft - 1);
+        }
+        throw error;
+    }
+}
+
 // Iniciar um upload em lote
 export const startBatchUpload = async (totalFiles: number) => {
-    const batchId = uuidv4(); // Gerar ID único para o lote
-    const response = await api.post('/persons/batch-upload-start/', {
-        batch_id: batchId,
-        total_files: totalFiles
-    });
-    return response.data.batch_id;
+    try {
+        const batchId = uuidv4();
+        const response = await api.post('/persons/batch-upload-start/', {
+            batch_id: batchId,
+            total_files: totalFiles
+        });
+        return response.data.batch_id;
+    } catch (error) {
+        console.error('Erro ao iniciar upload em lote:', error);
+        throw new Error('Não foi possível iniciar o upload. Tente novamente.');
+    }
 };
 
 // Fazer upload de um arquivo individual para um lote
-export const uploadFileInBatch = async (file: File, batchId: string) => {
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('batch_id', batchId);
-
-    const response = await api.post('/persons/upload-file/', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-    });
-    return response.data;
+export const uploadFileInBatch = async (file: File, batchId: string, onProgressUpdate?: (progress: number) => void) => {
+    try {
+        return await uploadWithRetry(file, batchId, onProgressUpdate);
+    } catch (error) {
+        console.error(`Erro no upload do arquivo ${file.name}:`, error);
+        const axiosError = error as AxiosError<ApiErrorResponse>;
+        const errorMessage = axiosError.response?.data?.detail ||
+            axiosError.response?.data?.message ||
+            'Erro desconhecido';
+        throw new Error(`Falha no upload do arquivo ${file.name}. ${errorMessage}`);
+    }
 };
 
 // Finalizar e processar um lote de upload
 export const completeBatchUpload = async (batchId: string) => {
-    const response = await api.post('/persons/batch-upload-complete/', {
-        batch_id: batchId
-    });
-    return response.data;
+    try {
+        const response = await api.post('/persons/batch-upload-complete/', {
+            batch_id: batchId
+        });
+        return response.data;
+    } catch (error) {
+        console.error('Erro ao finalizar o lote de upload:', error);
+        throw new Error('Não foi possível finalizar o processamento do lote. Tente novamente.');
+    }
 };
