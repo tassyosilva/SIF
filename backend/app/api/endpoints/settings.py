@@ -15,6 +15,7 @@ from ...core.dependencies import get_faiss_index, get_file_processor
 router = APIRouter()
 
 @router.get("/", response_model=SettingsInDB)
+@router.get("", response_model=SettingsInDB)
 def read_settings(db: Session = Depends(get_db)) -> Any:
     """
     Obter configurações atuais do sistema.
