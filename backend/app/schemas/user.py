@@ -10,6 +10,7 @@ class UserBase(BaseModel):
     matricula: str
     telefone: Optional[str] = None
     orgao: Optional[str] = None
+    estado_do_orgao: Optional[str] = None
     email: EmailStr
     tipo_usuario: UserType
 
@@ -40,5 +41,6 @@ class UserUpdate(BaseModel):
     nome_completo: Optional[str] = None
     telefone: Optional[str] = None
     orgao: Optional[str] = None
+    estado_do_orgao: Optional[str] = None
     tipo_usuario: Optional[UserType] = None
     ativo: Optional[bool] = None

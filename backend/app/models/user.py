@@ -18,6 +18,7 @@ class User(Base):
     matricula = Column(String, unique=True, nullable=False)
     telefone = Column(String)
     orgao = Column(String)
+    estado_do_orgao = Column(String)  # Novo campo
     email = Column(String, unique=True, nullable=False)
     senha_hash = Column(String, nullable=False)
     tipo_usuario = Column(Enum(UserType), nullable=False)
