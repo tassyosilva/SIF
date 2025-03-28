@@ -22,15 +22,9 @@ import {
     ListItem,
     ListItemText,
     ListItemIcon,
-    Dialog,
-    DialogTitle,
-    DialogContent,
-    DialogContentText,
-    DialogActions,
 } from '@mui/material';
 import {
     Save as SaveIcon,
-    Refresh as RefreshIcon,
     Storage as StorageIcon,
     Memory as MemoryIcon,
     Build as BuildIcon,
@@ -39,6 +33,7 @@ import {
     Image as ImageIcon,
 } from '@mui/icons-material';
 import { api } from '../services/api';
+
 
 interface SystemInfo {
     version: string;
@@ -50,6 +45,7 @@ interface SystemInfo {
     faiss_index_size: string;
     last_backup: string;
 }
+
 
 interface Settings {
     upload_dir: string;
@@ -65,14 +61,13 @@ interface Settings {
     backup_dir: string;
 }
 
+
 const SettingsPage = () => {
     const [saveLoading, setSaveLoading] = useState(false);
-    const [rebuildLoading, setRebuildLoading] = useState(false);
     const [backupLoading, setBackupLoading] = useState(false);
     const [success, setSuccess] = useState(false);
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
-    const [openConfirmDialog, setOpenConfirmDialog] = useState(false);
     const [systemInfo, setSystemInfo] = useState<SystemInfo>({
         version: '',
         database_status: '',
@@ -83,6 +78,7 @@ const SettingsPage = () => {
         faiss_index_size: '',
         last_backup: '',
     });
+
 
     // Configurações
     const [settings, setSettings] = useState<Settings>({
@@ -108,11 +104,13 @@ const SettingsPage = () => {
         backup_dir: './data/backups',
     });
 
+
     // Carregar configurações e informações do sistema ao montar o componente
     useEffect(() => {
         fetchSettings();
         fetchSystemInfo();
     }, []);
+
 
     // Buscar configurações do sistema
     const fetchSettings = async () => {
@@ -128,6 +126,7 @@ const SettingsPage = () => {
         }
     };
 
+
     // Buscar informações do sistema
     const fetchSystemInfo = async () => {
         setError(null);
@@ -140,6 +139,7 @@ const SettingsPage = () => {
         }
     };
 
+
     const handleSettingChange = (setting: string, value: any) => {
         setSettings({
             ...settings,
@@ -147,31 +147,6 @@ const SettingsPage = () => {
         });
     };
 
-    const handleRebuildClick = () => {
-        setOpenConfirmDialog(true);
-    };
-
-    const confirmRebuild = async () => {
-        setOpenConfirmDialog(false);
-        setRebuildLoading(true);
-        setError(null);
-
-        try {
-            await api.post('/settings/rebuild-index');
-            setSuccess(true);
-            setSuccessMessage('Reconstrução do índice FAISS iniciada. Este processo pode levar alguns minutos dependendo da quantidade de imagens.');
-
-            // Atualizar informações do sistema após reconstruir o índice
-            setTimeout(() => {
-                fetchSystemInfo();
-            }, 5000); // Aumentado para 5 segundos
-        } catch (err) {
-            console.error('Erro ao reconstruir índice:', err);
-            setError('Ocorreu um erro ao reconstruir o índice FAISS. Por favor, tente novamente.');
-        } finally {
-            setRebuildLoading(false);
-        }
-    };
 
     const createBackup = async () => {
         setBackupLoading(true);
@@ -193,6 +168,7 @@ const SettingsPage = () => {
             setBackupLoading(false);
         }
     };
+
 
     const saveAndApplyConfiguration = async () => {
         setSaveLoading(true);
@@ -227,6 +203,7 @@ const SettingsPage = () => {
             setSaveLoading(false);
         }
     };
+
 
     return (
         <Box>
@@ -312,20 +289,10 @@ const SettingsPage = () => {
                         <Box sx={{ mt: 3, display: 'flex', flexDirection: 'column', gap: 2 }}>
                             <Button
                                 variant="outlined"
-                                color="primary"
-                                startIcon={rebuildLoading ? <CircularProgress size={20} color="inherit" /> : <RefreshIcon />}
-                                onClick={handleRebuildClick}
-                                disabled={rebuildLoading || backupLoading}
-                            >
-                                {rebuildLoading ? 'Reconstruindo...' : 'Reconstruir Índice FAISS'}
-                            </Button>
-
-                            <Button
-                                variant="outlined"
                                 color="secondary"
                                 startIcon={backupLoading ? <CircularProgress size={20} color="inherit" /> : <BackupIcon />}
                                 onClick={createBackup}
-                                disabled={rebuildLoading || backupLoading}
+                                disabled={backupLoading}
                             >
                                 {backupLoading ? 'Criando Backup...' : 'Criar Backup Agora'}
                             </Button>
@@ -547,24 +514,6 @@ const SettingsPage = () => {
                     </Paper>
                 </Grid>
             </Grid>
-
-            {/* Diálogo de confirmação */}
-            <Dialog open={openConfirmDialog} onClose={() => setOpenConfirmDialog(false)}>
-                <DialogTitle>Confirmar reconstrução do índice</DialogTitle>
-                <DialogContent>
-                    <DialogContentText>
-                        Você deseja prosseguir? Esse processo pode levar alguns minutos dependendo da quantidade de imagens.
-                    </DialogContentText>
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => setOpenConfirmDialog(false)} color="primary">
-                        Cancelar
-                    </Button>
-                    <Button onClick={confirmRebuild} color="primary" variant="contained">
-                        Sim, reconstruir
-                    </Button>
-                </DialogActions>
-            </Dialog>
         </Box>
     );
 };
