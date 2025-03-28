@@ -1,0 +1,25 @@
+# Uso de imagem base oficial do Python
+FROM python:3.12-slim
+
+# Definição do diretório de trabalho
+WORKDIR /app/backend
+
+# Instalação dependências do sistema
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    libopenblas-dev \
+    liblapack-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copia o requirements e instale as dependências
+COPY backend/requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copia o código do backend
+COPY backend/ .
+
+# Expõe a porta do backend
+EXPOSE 8000
+
+# Comando para rodar a aplicação
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

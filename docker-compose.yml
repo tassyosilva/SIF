@@ -1,0 +1,42 @@
+version: '3.8'
+
+networks:
+  sif-network:
+    driver: bridge
+
+services:
+  backend:
+    container_name: sif-backend
+    image: sif-backend
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    volumes:
+      - ./backend/data:/app/backend/data
+    ports:
+      - "8000:8000"
+    environment:
+      - DB_HOST=192.168.1.1
+      - DB_USER=postgres
+      - DB_PASSWORD=suasenha
+      - DB_NAME=face_recognition
+      - DB_SSLMODE=disable
+    restart: always
+    networks:
+      - sif-network
+
+  frontend:
+    container_name: sif-frontend
+    image: sif-frontend
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    ports:
+      - "80:80"
+    environment:
+      - REACT_APP_API_URL=http://seu_ip_ou_dominio:8000/api
+    restart: always
+    depends_on:
+      - backend
+    networks:
+      - sif-network
