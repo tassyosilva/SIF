@@ -16,6 +16,7 @@ import {
     Upload as UploadIcon,
     Settings as SettingsIcon,
 } from '@mui/icons-material';
+import { authService } from '../../services/authService';
 
 interface SidebarProps {
     open: boolean;
@@ -28,26 +29,35 @@ const menuItems = [
         text: 'Dashboard',
         icon: <DashboardIcon />,
         path: '/',
+        allowedRoles: ['administrador', 'consultor', 'cadastrador']
     },
     {
         text: 'Upload',
         icon: <UploadIcon />,
         path: '/upload',
+        allowedRoles: ['administrador', 'cadastrador']
     },
     {
         text: 'Busca',
         icon: <SearchIcon />,
         path: '/search',
+        allowedRoles: ['administrador', 'consultor']
     },
     {
         text: 'Configurações',
         icon: <SettingsIcon />,
         path: '/settings',
+        allowedRoles: ['administrador']
     },
 ];
 
 const Sidebar = ({ open }: SidebarProps) => {
     const location = useLocation();
+    const user = authService.getCurrentUser();
+
+    const filteredMenuItems = menuItems.filter(
+        item => user && item.allowedRoles.includes(user.tipo_usuario)
+    );
 
     return (
         <Drawer
@@ -64,14 +74,13 @@ const Sidebar = ({ open }: SidebarProps) => {
                         easing: theme.transitions.easing.sharp,
                         duration: theme.transitions.duration.enteringScreen,
                     }),
-                    // Cor já definida no theme
                 },
             }}
         >
             <Toolbar />
             <Divider sx={{ borderColor: 'rgba(255, 255, 255, 0.12)' }} />
             <List>
-                {menuItems.map((item) => (
+                {filteredMenuItems.map((item) => (
                     <ListItem key={item.text} disablePadding>
                         <ListItemButton
                             component={Link}
@@ -88,7 +97,6 @@ const Sidebar = ({ open }: SidebarProps) => {
                                     minWidth: 0,
                                     mr: open ? 3 : 'auto',
                                     justifyContent: 'center',
-                                    // Cor já definida no theme
                                 }}
                             >
                                 {item.icon}
@@ -97,7 +105,7 @@ const Sidebar = ({ open }: SidebarProps) => {
                                 primary={item.text}
                                 sx={{
                                     opacity: open ? 1 : 0,
-                                    color: '#FFFFFF' // Garantindo que o texto seja branco
+                                    color: '#FFFFFF'
                                 }}
                             />
                         </ListItemButton>

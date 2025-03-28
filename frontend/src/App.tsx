@@ -1,15 +1,54 @@
 import { useState } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Box, CssBaseline, Toolbar } from '@mui/material';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
+
 // Componentes comuns
 import Header from './components/common/Header';
 import Sidebar from './components/common/Sidebar';
+
 // Páginas
 import Dashboard from './pages/Dashboard';
 import Upload from './pages/Upload';
 import Search from './pages/Search';
 import Settings from './pages/Settings';
+import Login from './pages/Login';
+
+// Serviço de autenticação
+import { authService } from './services/authService';
+
+// Componente de rota protegida
+const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
+  const isAuthenticated = authService.isAuthenticated();
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return children;
+};
+
+// Componente de rota com permissão específica
+const RoleProtectedRoute = ({
+  children,
+  allowedRoles
+}: {
+  children: JSX.Element,
+  allowedRoles: string[]
+}) => {
+  const user = authService.getCurrentUser();
+  const isAuthenticated = authService.isAuthenticated();
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (user && !allowedRoles.includes(user.tipo_usuario)) {
+    return <Navigate to="/" replace />;
+  }
+
+  return children;
+};
 
 // Cores da Polícia Civil
 const theme = createTheme({
@@ -47,7 +86,6 @@ const theme = createTheme({
         },
       },
     },
-    // Corrigido: Os ícones na sidebar agora serão brancos para ter bom contraste com o fundo preto
     MuiListItemIcon: {
       styleOverrides: {
         root: {
@@ -70,7 +108,6 @@ const theme = createTheme({
         },
       },
     },
-    // Ícones nos componentes com fundo branco serão pretos
     MuiSvgIcon: {
       styleOverrides: {
         root: {
@@ -95,28 +132,114 @@ function App() {
       <Router>
         <Box sx={{ display: 'flex' }}>
           <CssBaseline />
-          <Header open={open} toggleDrawer={toggleDrawer} />
-          <Sidebar open={open} />
-          <Box
-            component="main"
-            sx={{
-              flexGrow: 1,
-              p: 3,
-              width: '100%',
-              transition: theme => theme.transitions.create(['margin', 'width'], {
-                easing: theme.transitions.easing.sharp,
-                duration: theme.transitions.duration.leavingScreen,
-              }),
-            }}
-          >
-            <Toolbar />
-            <Routes>
-              <Route path="/" element={<Dashboard />} />
-              <Route path="/upload" element={<Upload />} />
-              <Route path="/search" element={<Search />} />
-              <Route path="/settings" element={<Settings />} />
-            </Routes>
-          </Box>
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route
+              path="/"
+              element={
+                <ProtectedRoute>
+                  <>
+                    <Header open={open} toggleDrawer={toggleDrawer} />
+                    <Sidebar open={open} />
+                    <Box
+                      component="main"
+                      sx={{
+                        flexGrow: 1,
+                        p: 3,
+                        width: '100%',
+                        transition: theme => theme.transitions.create(['margin', 'width'], {
+                          easing: theme.transitions.easing.sharp,
+                          duration: theme.transitions.duration.leavingScreen,
+                        }),
+                      }}
+                    >
+                      <Toolbar />
+                      <Dashboard />
+                    </Box>
+                  </>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/upload"
+              element={
+                <RoleProtectedRoute allowedRoles={['administrador', 'cadastrador']}>
+                  <>
+                    <Header open={open} toggleDrawer={toggleDrawer} />
+                    <Sidebar open={open} />
+                    <Box
+                      component="main"
+                      sx={{
+                        flexGrow: 1,
+                        p: 3,
+                        width: '100%',
+                        transition: theme => theme.transitions.create(['margin', 'width'], {
+                          easing: theme.transitions.easing.sharp,
+                          duration: theme.transitions.duration.leavingScreen,
+                        }),
+                      }}
+                    >
+                      <Toolbar />
+                      <Upload />
+                    </Box>
+                  </>
+                </RoleProtectedRoute>
+              }
+            />
+            <Route
+              path="/search"
+              element={
+                <RoleProtectedRoute allowedRoles={['administrador', 'consultor']}>
+                  <>
+                    <Header open={open} toggleDrawer={toggleDrawer} />
+                    <Sidebar open={open} />
+                    <Box
+                      component="main"
+                      sx={{
+                        flexGrow: 1,
+                        p: 3,
+                        width: '100%',
+                        transition: theme => theme.transitions.create(['margin', 'width'], {
+                          easing: theme.transitions.easing.sharp,
+                          duration: theme.transitions.duration.leavingScreen,
+                        }),
+                      }}
+                    >
+                      <Toolbar />
+                      <Search />
+                    </Box>
+                  </>
+                </RoleProtectedRoute>
+              }
+            />
+            <Route
+              path="/settings"
+              element={
+                <RoleProtectedRoute allowedRoles={['administrador']}>
+                  <>
+                    <Header open={open} toggleDrawer={toggleDrawer} />
+                    <Sidebar open={open} />
+                    <Box
+                      component="main"
+                      sx={{
+                        flexGrow: 1,
+                        p: 3,
+                        width: '100%',
+                        transition: theme => theme.transitions.create(['margin', 'width'], {
+                          easing: theme.transitions.easing.sharp,
+                          duration: theme.transitions.duration.leavingScreen,
+                        }),
+                      }}
+                    >
+                      <Toolbar />
+                      <Settings />
+                    </Box>
+                  </>
+                </RoleProtectedRoute>
+              }
+            />
+            <Route path="*" element={<Navigate to="/login" replace />} />
+          </Routes>
         </Box>
       </Router>
     </ThemeProvider>

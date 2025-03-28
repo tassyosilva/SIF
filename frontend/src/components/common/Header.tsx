@@ -3,9 +3,12 @@ import {
     Menu as MenuIcon,
     Notifications as NotificationsIcon,
     AccountCircle as AccountCircleIcon,
+    Logout as LogoutIcon
 } from '@mui/icons-material';
 import { useState } from 'react';
-import logoImage from '../../assets/logo.png'; // Importando a logo
+import { useNavigate } from 'react-router-dom';
+import logoImage from '../../assets/logo.png';
+import { authService } from '../../services/authService';
 
 interface HeaderProps {
     open: boolean;
@@ -14,6 +17,8 @@ interface HeaderProps {
 
 const Header = ({ open, toggleDrawer }: HeaderProps) => {
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+    const navigate = useNavigate();
+    const user = authService.getCurrentUser();
 
     const handleMenu = (event: React.MouseEvent<HTMLElement>) => {
         setAnchorEl(event.currentTarget);
@@ -21,6 +26,11 @@ const Header = ({ open, toggleDrawer }: HeaderProps) => {
 
     const handleClose = () => {
         setAnchorEl(null);
+    };
+
+    const handleLogout = () => {
+        authService.logout();
+        navigate('/login');
     };
 
     return (
@@ -44,9 +54,7 @@ const Header = ({ open, toggleDrawer }: HeaderProps) => {
                 >
                     <MenuIcon />
                 </IconButton>
-
                 <Box sx={{ display: 'flex', alignItems: 'center', flexGrow: 1 }}>
-                    {/* Logo da Polícia Civil */}
                     <Box sx={{ mr: 2, display: 'flex', alignItems: 'center' }}>
                         <img
                             src={logoImage}
@@ -57,19 +65,16 @@ const Header = ({ open, toggleDrawer }: HeaderProps) => {
                             }}
                         />
                     </Box>
-
                     <Typography variant="h6" noWrap component="div">
                         Sistema de Identificação Facial
                     </Typography>
                 </Box>
-
                 <Box sx={{ display: 'flex' }}>
                     <IconButton color="inherit">
                         <Badge badgeContent={4} color="error">
                             <NotificationsIcon />
                         </Badge>
                     </IconButton>
-
                     <IconButton
                         size="large"
                         aria-label="account of current user"
@@ -80,7 +85,6 @@ const Header = ({ open, toggleDrawer }: HeaderProps) => {
                     >
                         <AccountCircleIcon />
                     </IconButton>
-
                     <Menu
                         id="menu-appbar"
                         anchorEl={anchorEl}
@@ -98,8 +102,16 @@ const Header = ({ open, toggleDrawer }: HeaderProps) => {
                     >
                         <MenuItem onClick={handleClose}>Perfil</MenuItem>
                         <MenuItem onClick={handleClose}>Minha Conta</MenuItem>
-                        <MenuItem onClick={handleClose}>Sair</MenuItem>
+                        <MenuItem onClick={handleLogout}>Sair</MenuItem>
                     </Menu>
+                    <IconButton
+                        size="large"
+                        aria-label="logout"
+                        color="inherit"
+                        onClick={handleLogout}
+                    >
+                        <LogoutIcon />
+                    </IconButton>
                 </Box>
             </Toolbar>
         </AppBar>

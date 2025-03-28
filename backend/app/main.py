@@ -7,9 +7,11 @@ import logging
 
 from .api.router import api_router
 from .config import settings
-from .database import engine, Base
+from .database import engine, Base, SessionLocal
 from .core.dependencies import init_processors
 from .tasks.scheduled_tasks import start_scheduler
+from .models.user import User, UserType
+from .core.security import hash_password
 
 # Importar todos os modelos para garantir que sejam registrados com Base
 from .models import Person, Settings # Importe todos os seus modelos aqui
@@ -47,6 +49,29 @@ try:
     inspector = inspect(engine)
     tables = inspector.get_table_names()
     logger.info(f"Tables in database after creation: {tables}")
+    
+    # Verificar e criar usuário admin
+    with SessionLocal() as db:
+        # Verificar se já existe um admin
+        existing_admin = db.query(User).filter(User.login == "admin").first()
+        
+        if not existing_admin:
+            admin_user = User(
+                login="admin",
+                nome_completo="Administrador do Sistema",
+                cpf="00000000000",  # CPF fictício
+                matricula="000000",
+                email="admin@admin.com",
+                senha_hash=hash_password("admin"),
+                tipo_usuario=UserType.ADMINISTRADOR
+            )
+            
+            db.add(admin_user)
+            db.commit()
+            logger.info("Usuário administrador criado com sucesso!")
+        else:
+            logger.info("Usuário administrador já existe.")
+            
 except Exception as e:
     logger.error(f"Error with database: {e}")
 
