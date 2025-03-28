@@ -1,9 +1,7 @@
 import os
-
 from pydantic import PostgresDsn
 from pydantic_settings import BaseSettings
 from typing import Optional
-
 
 class Settings(BaseSettings):
     """
@@ -31,11 +29,11 @@ class Settings(BaseSettings):
     
     # Configurações de processamento
     BATCH_WORKERS: int = 4
+    SIMILARITY_THRESHOLD: float = 0.7
     
     class Config:
         env_file = ".env"
         case_sensitive = True
-
 
 # Instanciar as configurações
 settings = Settings()

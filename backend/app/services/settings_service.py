@@ -1,6 +1,7 @@
 import os
 import shutil
 import psutil
+import logging
 from datetime import datetime
 from sqlalchemy.orm import Session
 from sqlalchemy import func
@@ -11,13 +12,29 @@ from ..core.dependencies import rebuild_index_from_db
 
 def get_settings(db: Session):
     """Obter configurações do sistema"""
+    # Tentar obter a primeira configuração
     settings = db.query(Settings).first()
+    
+    # Se não existir, criar uma nova
     if not settings:
-        # Criar configurações padrão se não existirem
         settings = Settings()
         db.add(settings)
         db.commit()
         db.refresh(settings)
+    # Se existirem múltiplas, manter apenas a primeira e excluir as outras
+    else:
+        # Verificar se há mais registros além do primeiro
+        extra_settings = db.query(Settings).offset(1).all()
+        if extra_settings:
+            # Registrar quantos registros extras encontrados
+            logger = logging.getLogger(__name__)
+            logger.warning(f"Encontrados {len(extra_settings)} registros extras na tabela settings. Mantendo apenas o primeiro.")
+            
+            # Excluir registros extras
+            for extra in extra_settings:
+                db.delete(extra)
+            db.commit()
+    
     return settings
 
 def update_settings(db: Session, settings_update: SettingsUpdate):

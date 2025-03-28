@@ -69,10 +69,12 @@ const SettingsPage = () => {
     const [saveLoading, setSaveLoading] = useState(false);
     const [rebuildLoading, setRebuildLoading] = useState(false);
     const [backupLoading, setBackupLoading] = useState(false);
+    const [restartLoading, setRestartLoading] = useState(false);
     const [success, setSuccess] = useState(false);
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [openConfirmDialog, setOpenConfirmDialog] = useState(false);
+    const [openRestartConfirm, setOpenRestartConfirm] = useState(false);
     const [systemInfo, setSystemInfo] = useState<SystemInfo>({
         version: '',
         database_status: '',
@@ -116,11 +118,11 @@ const SettingsPage = () => {
 
     // Buscar configurações do sistema
     const fetchSettings = async () => {
-        // Atualizando o estado de loading para componentes visuais se necessário
         setError(null);
-
         try {
-            const response = await api.get('/settings');
+            // Adicione um parâmetro de timestamp para evitar cache
+            const response = await api.get(`/settings?t=${new Date().getTime()}`);
+            console.log("Configurações carregadas:", response.data);
             setSettings(response.data);
         } catch (err) {
             console.error('Erro ao carregar configurações:', err);
@@ -130,9 +132,7 @@ const SettingsPage = () => {
 
     // Buscar informações do sistema
     const fetchSystemInfo = async () => {
-        // Atualizando o estado de loading para componentes visuais se necessário
         setError(null);
-
         try {
             const response = await api.get('/settings/system-info');
             setSystemInfo(response.data);
@@ -147,26 +147,6 @@ const SettingsPage = () => {
             ...settings,
             [setting]: value,
         });
-    };
-
-    const saveSettings = async () => {
-        setSaveLoading(true);
-        setSuccess(false);
-        setError(null);
-
-        try {
-            await api.put('/settings', settings);
-            setSuccess(true);
-            setSuccessMessage('Configurações salvas com sucesso!');
-
-            // Atualizar informações do sistema após salvar configurações
-            fetchSystemInfo();
-        } catch (err) {
-            console.error('Erro ao salvar configurações:', err);
-            setError('Ocorreu um erro ao salvar as configurações. Por favor, tente novamente.');
-        } finally {
-            setSaveLoading(false);
-        }
     };
 
     const handleRebuildClick = () => {
@@ -213,6 +193,39 @@ const SettingsPage = () => {
             setError('Ocorreu um erro ao criar o backup. Por favor, tente novamente.');
         } finally {
             setBackupLoading(false);
+        }
+    };
+
+    const saveAndApplyConfiguration = async () => {
+        setRestartLoading(true);
+        setError(null);
+
+        try {
+            // Primeiro salvamos explicitamente
+            console.log("Salvando configurações:", settings);
+            await api.put('/settings', settings);
+
+            // Pequena pausa para garantir que o banco processou
+            await new Promise(resolve => setTimeout(resolve, 500));
+
+            // Agora aplicamos as configurações
+            console.log("Aplicando configurações salvas");
+            const response = await api.post('/settings/reload-config');
+            console.log("Resposta do reload-config:", response.data);
+
+            // Mostramos mensagem de sucesso
+            setSuccess(true);
+            setSuccessMessage('Configurações salvas e aplicadas com sucesso!');
+
+            // Recarregar explicitamente as configurações e informações do sistema
+            await new Promise(resolve => setTimeout(resolve, 500));
+            await fetchSettings();
+            await fetchSystemInfo();
+        } catch (err) {
+            console.error('Erro ao salvar e aplicar configurações:', err);
+            setError('Ocorreu um erro ao processar as configurações.');
+        } finally {
+            setRestartLoading(false);
         }
     };
 
@@ -525,11 +538,11 @@ const SettingsPage = () => {
                             <Button
                                 variant="contained"
                                 color="primary"
-                                startIcon={saveLoading ? <CircularProgress size={20} color="inherit" /> : <SaveIcon />}
-                                onClick={saveSettings}
-                                disabled={saveLoading}
+                                startIcon={restartLoading ? <CircularProgress size={20} color="inherit" /> : <SaveIcon />}
+                                onClick={() => setOpenRestartConfirm(true)}
+                                disabled={restartLoading}
                             >
-                                {saveLoading ? 'Salvando...' : 'Salvar Configurações'}
+                                {restartLoading ? 'Processando...' : 'Salvar e Aplicar Configurações'}
                             </Button>
                         </Box>
                     </Paper>
@@ -550,6 +563,29 @@ const SettingsPage = () => {
                     </Button>
                     <Button onClick={confirmRebuild} color="primary" variant="contained">
                         Sim, reconstruir
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Diálogo de confirmação de aplicação */}
+            <Dialog
+                open={openRestartConfirm}
+                onClose={() => setOpenRestartConfirm(false)}
+            >
+                <DialogTitle>Confirmar Alterações</DialogTitle>
+                <DialogContent>
+                    <DialogContentText>
+                        As configurações serão salvas e aplicadas imediatamente ao servidor.
+                        Isso pode afetar temporariamente o desempenho do sistema. Deseja continuar?
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setOpenRestartConfirm(false)}>Cancelar</Button>
+                    <Button onClick={() => {
+                        setOpenRestartConfirm(false);
+                        saveAndApplyConfiguration();
+                    }} color="primary" variant="contained">
+                        Salvar e Aplicar
                     </Button>
                 </DialogActions>
             </Dialog>

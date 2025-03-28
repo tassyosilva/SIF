@@ -23,7 +23,7 @@ class Settings(Base):
     faiss_index_type = Column(String, default="L2")
     
     # Configurações de processamento
-    batch_workers = Column(Integer, default=4)
+    batch_workers = Column(Integer, default=8)
     similarity_threshold = Column(Float, default=0.7)
     
     # Configurações de backup
