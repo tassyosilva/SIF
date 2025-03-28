@@ -1,6 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
 import {
-    Box,
     Drawer,
     List,
     ListItem,
@@ -15,6 +14,7 @@ import {
     Search as SearchIcon,
     Upload as UploadIcon,
     Settings as SettingsIcon,
+    People as PeopleIcon,
 } from '@mui/icons-material';
 import { authService } from '../../services/authService';
 
@@ -42,6 +42,12 @@ const menuItems = [
         icon: <SearchIcon />,
         path: '/search',
         allowedRoles: ['administrador', 'consultor']
+    },
+    {
+        text: 'Usuários',
+        icon: <PeopleIcon />,
+        path: '/users',
+        allowedRoles: ['administrador']
     },
     {
         text: 'Configurações',

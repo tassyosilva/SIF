@@ -13,6 +13,8 @@ import Upload from './pages/Upload';
 import Search from './pages/Search';
 import Settings from './pages/Settings';
 import Login from './pages/Login';
+import UserList from './pages/UserList';
+import UserForm from './pages/UserForm';
 
 // Serviço de autenticação
 import { authService } from './services/authService';
@@ -233,6 +235,58 @@ function App() {
                     >
                       <Toolbar />
                       <Settings />
+                    </Box>
+                  </>
+                </RoleProtectedRoute>
+              }
+            />
+            <Route
+              path="/users"
+              element={
+                <RoleProtectedRoute allowedRoles={['administrador']}>
+                  <>
+                    <Header open={open} toggleDrawer={toggleDrawer} />
+                    <Sidebar open={open} />
+                    <Box
+                      component="main"
+                      sx={{
+                        flexGrow: 1,
+                        p: 3,
+                        width: '100%',
+                        transition: theme => theme.transitions.create(['margin', 'width'], {
+                          easing: theme.transitions.easing.sharp,
+                          duration: theme.transitions.duration.leavingScreen,
+                        }),
+                      }}
+                    >
+                      <Toolbar />
+                      <UserList />
+                    </Box>
+                  </>
+                </RoleProtectedRoute>
+              }
+            />
+            <Route
+              path="/users/:id"
+              element={
+                <RoleProtectedRoute allowedRoles={['administrador']}>
+                  <>
+                    <Header open={open} toggleDrawer={toggleDrawer} />
+                    <Sidebar open={open} />
+                    <Box
+                      component="main"
+                      sx={{
+                        flexGrow: 1,
+                        p: 3,
+                        width: '100%',
+                        transition: theme => theme.transitions.create(['margin', 'width'], {
+                          easing: theme.transitions.easing.sharp,
+                          duration: theme.transitions.duration.leavingScreen,
+                        }),
+                      }}
+                    >
+                      <Toolbar />
+                      <UserForm />
                     </Box>
                   </>
                 </RoleProtectedRoute>
