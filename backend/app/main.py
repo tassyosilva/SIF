@@ -12,6 +12,7 @@ from .core.dependencies import init_processors
 from .tasks.scheduled_tasks import start_scheduler
 from .models.user import User, UserType
 from .core.security import hash_password
+from .models.local import Estado, Orgao
 
 # Importar todos os modelos para garantir que sejam registrados com Base
 from .models import Person, Settings # Importe todos os seus modelos aqui
@@ -71,6 +72,12 @@ try:
             logger.info("Usuário administrador criado com sucesso!")
         else:
             logger.info("Usuário administrador já existe.")
+    
+    # Popular estados e órgãos
+    with SessionLocal() as db:
+        Estado.populate_default_estados(db)
+        Orgao.populate_default_orgaos(db)
+        logger.info("Estados e Órgãos populados com sucesso!")
             
 except Exception as e:
     logger.error(f"Error with database: {e}")
