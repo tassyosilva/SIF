@@ -7,11 +7,73 @@ import {
     TextField,
     Button,
     Alert,
-    Snackbar} from '@mui/material';
+    Snackbar
+} from '@mui/material';
 import { Upload as UploadIcon } from '@mui/icons-material';
 import { uploadImage } from '../services/personService';
 import { formatCPF, unformatCPF } from '../services/userService';
 import { authService } from '../services/authService';
+
+// Função de compressão de imagem
+const compressImage = (file: File): Promise<File> => {
+    return new Promise((resolve, reject) => {
+        // Se o arquivo for menor que 400KB, retornar original
+        if (file.size <= 400 * 1024) {
+            resolve(file);
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = (event) => {
+            const img = new Image();
+            img.src = event.target?.result as string;
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+
+                // Reduzir a qualidade e o tamanho da imagem
+                const MAX_WIDTH = 1920;
+                const MAX_HEIGHT = 1080;
+                let width = img.width;
+                let height = img.height;
+
+                // Redimensionar mantendo a proporção
+                if (width > height) {
+                    if (width > MAX_WIDTH) {
+                        height *= MAX_WIDTH / width;
+                        width = MAX_WIDTH;
+                    }
+                } else {
+                    if (height > MAX_HEIGHT) {
+                        width *= MAX_HEIGHT / height;
+                        height = MAX_HEIGHT;
+                    }
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+
+                // Desenhar a imagem no canvas
+                ctx?.drawImage(img, 0, 0, width, height);
+
+                // Comprimir para JPEG com qualidade reduzida
+                canvas.toBlob((blob) => {
+                    if (!blob) {
+                        reject(new Error('Falha na compressão'));
+                        return;
+                    }
+                    const compressedFile = new File([blob], file.name, {
+                        type: 'image/jpeg',
+                        lastModified: Date.now()
+                    });
+                    resolve(compressedFile);
+                }, 'image/jpeg', 0.7);  // Qualidade 0.7 (70%)
+            };
+        };
+        reader.onerror = (error) => reject(error);
+    });
+};
 
 const IndividualRegistration = () => {
     const [name, setName] = useState('');
@@ -30,13 +92,22 @@ const IndividualRegistration = () => {
         setCpf(formatCPF(value));
     };
 
-    const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
         if (event.target.files && event.target.files[0]) {
-            const selectedFile = event.target.files[0];
-            setFile(selectedFile);
+            try {
+                const selectedFile = event.target.files[0];
 
-            const fileUrl = URL.createObjectURL(selectedFile);
-            setPreviewUrl(fileUrl);
+                // Comprimir a imagem
+                const compressedFile = await compressImage(selectedFile);
+
+                setFile(compressedFile);
+
+                const fileUrl = URL.createObjectURL(compressedFile);
+                setPreviewUrl(fileUrl);
+            } catch (err) {
+                console.error('Erro ao comprimir imagem:', err);
+                setError('Erro ao processar a imagem. Tente novamente.');
+            }
         }
     };
 
@@ -48,7 +119,7 @@ const IndividualRegistration = () => {
         const cleanCpf = unformatCPF(cpf);
         const cleanRg = rg.padStart(11, '0');
         const cleanName = name.toUpperCase().replace(/\s+/g, '_');
-        const fileExt = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+        const fileExt = 'jpg';  // Forçar extensão jpg após compressão
 
         return `${origin}${cleanCpf}${cleanRg}${cleanName}.${fileExt}`;
     };
@@ -81,7 +152,7 @@ const IndividualRegistration = () => {
         try {
             // Criar um novo arquivo com o nome gerado
             const newFilename = generateFilename();
-            const renamedFile = new File([file], newFilename, { type: file.type });
+            const renamedFile = new File([file], newFilename, { type: 'image/jpeg' });
 
             const result = await uploadImage(renamedFile);
 
@@ -179,7 +250,7 @@ const IndividualRegistration = () => {
                             </Button>
                             {file && (
                                 <Typography variant="body2" sx={{ mt: 1 }}>
-                                    {file.name}
+                                    {file.name} ({(file.size / 1024).toFixed(1)} KB)
                                 </Typography>
                             )}
                         </Grid>
