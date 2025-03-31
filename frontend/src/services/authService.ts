@@ -9,6 +9,7 @@ export interface User {
     nome_completo: string;
     tipo_usuario: string;
     email: string;
+    orgao?: string;
 }
 
 export interface AuthResponse {

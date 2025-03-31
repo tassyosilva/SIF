@@ -89,7 +89,8 @@ def login_for_access_token(
         "user": {
             "nome_completo": user.nome_completo,
             "tipo_usuario": user.tipo_usuario.value,
-            "email": user.email
+            "email": user.email,
+            "orgao": user.orgao  # Adicionar o órgão aqui
         }
     }
 
@@ -130,13 +131,10 @@ def change_password(
     # Verificar se a senha atual está correta
     if not verify_password(current_password, user.senha_hash):
         raise HTTPException(status_code=400, detail="Senha atual incorreta")
-    
     # Validar nova senha
     if len(new_password) < 6:
         raise HTTPException(status_code=400, detail="Senha deve ter pelo menos 6 caracteres")
-    
     # Atualizar senha
     user.senha_hash = hash_password(new_password)
     db.commit()
-    
     return {"message": "Senha alterada com sucesso"}

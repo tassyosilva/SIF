@@ -7,10 +7,8 @@ import {
     TextField,
     Button,
     Alert,
-    Snackbar,
-    IconButton
-} from '@mui/material';
-import { Upload as UploadIcon, Close as CloseIcon } from '@mui/icons-material';
+    Snackbar} from '@mui/material';
+import { Upload as UploadIcon } from '@mui/icons-material';
 import { uploadImage } from '../services/personService';
 import { formatCPF, unformatCPF } from '../services/userService';
 import { authService } from '../services/authService';
@@ -45,14 +43,8 @@ const IndividualRegistration = () => {
     const generateFilename = () => {
         if (!user || !file) return '';
 
-        // Códigos de origem por tipo de usuário
-        const originMap: { [key: string]: string } = {
-            'administrador': '001',
-            'cadastrador': '002',
-            'consultor': '003'
-        };
-
-        const origin = originMap[user.tipo_usuario] || '001';
+        // Usar o órgão do usuário para gerar a origem
+        const origin = user.orgao ? user.orgao.padStart(3, '0').slice(0, 3) : '001';
         const cleanCpf = unformatCPF(cpf);
         const cleanRg = rg.padStart(11, '0');
         const cleanName = name.toUpperCase().replace(/\s+/g, '_');
@@ -133,7 +125,14 @@ const IndividualRegistration = () => {
                                 variant="outlined"
                                 fullWidth
                                 value={name}
-                                onChange={(e) => setName(e.target.value)}
+                                onChange={(e) => {
+                                    // Remove acentos e caracteres especiais
+                                    const cleanValue = e.target.value
+                                        .normalize('NFD')
+                                        .replace(/[\u0300-\u036f]/g, '')
+                                        .replace(/[^a-zA-Z\s]/g, '');
+                                    setName(cleanValue);
+                                }}
                                 required
                             />
                         </Grid>
