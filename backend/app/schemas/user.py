@@ -30,7 +30,6 @@ class UserCreate(UserBase):
 
 class UserInDB(UserBase):
     id: int
-    ativo: bool
     criado_em: datetime
     atualizado_em: datetime
 
@@ -43,4 +42,3 @@ class UserUpdate(BaseModel):
     orgao: Optional[str] = None
     estado_do_orgao: Optional[str] = None
     tipo_usuario: Optional[UserType] = None
-    ativo: Optional[bool] = None

@@ -11,7 +11,6 @@ export interface User {
     estado_do_orgao?: string;
     email: string;
     tipo_usuario: string;
-    ativo: boolean;
     criado_em: string;
     atualizado_em: string;
 }
@@ -35,17 +34,15 @@ export interface UserUpdate {
     orgao?: string;
     estado_do_orgao?: string;
     tipo_usuario?: string;
-    ativo?: boolean;
 }
 
 // Obter lista de usuários com filtros opcionais
 export const getUsers = async (
     skip = 0,
     limit = 100,
-    nome?: string,
-    ativo?: boolean
+    nome?: string
 ) => {
-    const params = { skip, limit, nome, ativo };
+    const params = { skip, limit, nome };
     const response = await api.get<User[]>('/users/', { params });
     return response.data;
 };
@@ -68,7 +65,7 @@ export const updateUser = async (id: number, userData: UserUpdate) => {
     return response.data;
 };
 
-// Excluir um usuário (ou desativar)
+// Excluir um usuário
 export const deleteUser = async (id: number) => {
     const response = await api.delete(`/users/${id}`);
     return response.data;

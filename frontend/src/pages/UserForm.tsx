@@ -16,7 +16,6 @@ import {
     CircularProgress,
     Alert,
     Divider,
-    Switch,
     InputAdornment,
     IconButton
 } from '@mui/material';
@@ -59,7 +58,6 @@ const UserForm = () => {
     const [tipoUsuario, setTipoUsuario] = useState('consultor');
     const [senha, setSenha] = useState('');
     const [confirmSenha, setConfirmSenha] = useState('');
-    const [ativo, setAtivo] = useState(true);
 
     // Estado para listas de opções
     const [estados, setEstados] = useState<Estado[]>([]);
@@ -109,7 +107,6 @@ const UserForm = () => {
                     setEstadoDoOrgao(userData.estado_do_orgao || '');
                     setEmail(userData.email);
                     setTipoUsuario(userData.tipo_usuario);
-                    setAtivo(userData.ativo);
                 }
             } catch (err: any) {
                 console.error('Erro ao carregar dados:', err);
@@ -205,8 +202,7 @@ const UserForm = () => {
                 orgao: orgao || undefined,
                 estado_do_orgao: estadoDoOrgao || undefined,
                 email,
-                tipo_usuario: tipoUsuario,
-                ativo
+                tipo_usuario: tipoUsuario
             };
 
             if (isNewUser) {
@@ -432,21 +428,6 @@ const UserForm = () => {
                                     />
                                 </RadioGroup>
                             </FormControl>
-                        </Grid>
-
-                        <Grid item xs={12} md={6}>
-                            {!isNewUser && (
-                                <FormControlLabel
-                                    control={
-                                        <Switch
-                                            checked={ativo}
-                                            onChange={(e) => setAtivo(e.target.checked)}
-                                            color="primary"
-                                        />
-                                    }
-                                    label="Usuário Ativo"
-                                />
-                            )}
                         </Grid>
 
                         {/* Senha - apenas para novos usuários */}

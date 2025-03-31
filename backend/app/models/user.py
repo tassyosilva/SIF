@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, Boolean, Enum
+from sqlalchemy import Column, Integer, String, DateTime, Enum
 from datetime import datetime
 from ..database import Base
 import enum
@@ -23,7 +23,6 @@ class User(Base):
     senha_hash = Column(String, nullable=False)
     tipo_usuario = Column(Enum(UserType), nullable=False)
     
-    ativo = Column(Boolean, default=True)
     criado_em = Column(DateTime, default=datetime.utcnow)
     atualizado_em = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

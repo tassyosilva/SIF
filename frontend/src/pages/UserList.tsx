@@ -27,8 +27,6 @@ import {
     Add as AddIcon,
     Edit as EditIcon,
     Delete as DeleteIcon,
-    Check as CheckIcon,
-    Close as CloseIcon,
     Search as SearchIcon
 } from '@mui/icons-material';
 import { getUsers, deleteUser, User } from '../services/userService';
@@ -41,6 +39,7 @@ const UserList = () => {
     const [search, setSearch] = useState('');
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [userToDelete, setUserToDelete] = useState<User | null>(null);
+    const [deleteSuccess, setDeleteSuccess] = useState<string | null>(null);
 
     // Paginação
     const [page, setPage] = useState(1);
@@ -100,13 +99,21 @@ const UserList = () => {
         setLoading(true);
         try {
             await deleteUser(userToDelete.id);
-            // Recarregar a lista após deletar
-            loadUsers();
+            setDeleteSuccess(`Usuário ${userToDelete.nome_completo} excluído com sucesso!`);
             setDeleteDialogOpen(false);
             setUserToDelete(null);
+
+            // Recarregar a lista após deletar
+            await loadUsers();
+
+            // Limpar mensagem de sucesso após 3 segundos
+            setTimeout(() => {
+                setDeleteSuccess(null);
+            }, 3000);
         } catch (err: any) {
             console.error('Erro ao excluir usuário:', err);
             setError(err.response?.data?.detail || 'Erro ao excluir usuário');
+            setDeleteDialogOpen(false);
         } finally {
             setLoading(false);
         }
@@ -133,11 +140,6 @@ const UserList = () => {
             default:
                 return tipo;
         }
-    };
-
-    // Função para traduzir o status de ativo
-    const getStatusLabel = (ativo: boolean) => {
-        return ativo ? 'Ativo' : 'Inativo';
     };
 
     return (
@@ -186,6 +188,12 @@ const UserList = () => {
                     </Alert>
                 )}
 
+                {deleteSuccess && (
+                    <Alert severity="success" sx={{ mb: 2 }}>
+                        {deleteSuccess}
+                    </Alert>
+                )}
+
                 <TableContainer>
                     <Table>
                         <TableHead>
@@ -195,14 +203,13 @@ const UserList = () => {
                                 <TableCell>E-mail</TableCell>
                                 <TableCell>Matrícula</TableCell>
                                 <TableCell>Tipo</TableCell>
-                                <TableCell>Status</TableCell>
                                 <TableCell>Ações</TableCell>
                             </TableRow>
                         </TableHead>
                         <TableBody>
                             {users.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={7} align="center">
+                                    <TableCell colSpan={6} align="center">
                                         {loading ? 'Carregando...' : 'Nenhum usuário encontrado'}
                                     </TableCell>
                                 </TableRow>
@@ -220,14 +227,6 @@ const UserList = () => {
                                                     user.tipo_usuario === 'administrador' ? 'primary' :
                                                         user.tipo_usuario === 'consultor' ? 'secondary' : 'default'
                                                 }
-                                                size="small"
-                                            />
-                                        </TableCell>
-                                        <TableCell>
-                                            <Chip
-                                                label={getStatusLabel(user.ativo)}
-                                                color={user.ativo ? 'success' : 'error'}
-                                                icon={user.ativo ? <CheckIcon /> : <CloseIcon />}
                                                 size="small"
                                             />
                                         </TableCell>
