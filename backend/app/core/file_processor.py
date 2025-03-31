@@ -7,10 +7,13 @@ from datetime import datetime
 import concurrent.futures
 from pathlib import Path
 
+
 from .face_processor import FaceProcessor
 from .faiss_index import FaissIndex
 
+
 logger = logging.getLogger(__name__)
+
 
 class FileProcessor:
     """
@@ -18,15 +21,14 @@ class FileProcessor:
     e gerenciar o processamento em lote de imagens.
     """
     def __init__(
-        self, 
-        upload_dir: str, 
+        self,
+        upload_dir: str,
         processed_dir: str,
         face_processor: FaceProcessor,
         faiss_index: FaissIndex
     ):
         """
         Inicializa o processador de arquivos.
-        
         Args:
             upload_dir: Diretório para uploads de imagens
             processed_dir: Diretório para imagens processadas
@@ -38,27 +40,41 @@ class FileProcessor:
         self.face_processor = face_processor
         self.faiss_index = faiss_index
         
+        # Mapa de origens completo com todos os órgãos disponíveis
+        self.origin_map = {
+            "001": "idnet",
+            "002": "cacador",
+            "003": "pf",
+            "004": "prf",
+            "005": "pff",
+            "006": "pm",
+            "007": "pc",
+            "008": "pp",
+            "009": "gm",
+            "010": "sesp",
+            "011": "sejuc",
+            "012": "mitra"
+        }
+        
         # Criar diretórios se não existirem
         os.makedirs(upload_dir, exist_ok=True)
         os.makedirs(processed_dir, exist_ok=True)
-        
         logger.info(f"File processor initialized with upload_dir={upload_dir}, processed_dir={processed_dir}")
-    
+
     def parse_filename(self, filename: str) -> Dict[str, Any]:
         """
         Extrai informações do nome do arquivo seguindo o novo padrão:
         OOOCCCCCCCCCCCRRRRRRRRRRRNOME.ext
-        
         Onde:
         - OOO: origem do arquivo (001 para idnet, 002 para cacador)
         - CCCCCCCCCCC: CPF da pessoa (11 dígitos)
         - RRRRRRRRRRR: RG da pessoa (11 dígitos)
         - NOME: nome da pessoa (com underscores)
         - .ext: extensão do arquivo (.jpg, .png, etc.)
-        
+
         Args:
             filename: Nome do arquivo a ser analisado
-            
+
         Returns:
             Dicionário com as informações extraídas
         """
@@ -92,13 +108,8 @@ class FileProcessor:
             # Formatar nome (substituir underscores por espaços)
             person_name = person_name_raw.replace('_', ' ')
             
-            # Mapear códigos de origem para nomes
-            origin_map = {
-                "001": "idnet",
-                "002": "cacador"
-            }
-            
-            origin = origin_map.get(origin_code, "unknown")
+            # Usar o mapa de origens da classe
+            origin = self.origin_map.get(origin_code, "unknown")
             
             return {
                 "valid": True,
@@ -109,7 +120,6 @@ class FileProcessor:
                 "person_id": person_id,
                 "person_name": person_name
             }
-        
         except Exception as e:
             logger.error(f"Error parsing filename {filename}: {str(e)}")
             return {
@@ -117,15 +127,15 @@ class FileProcessor:
                 "filename": filename,
                 "error": str(e)
             }
-    
+
     def process_image(self, image_path: str) -> Dict[str, Any]:
         """
         Processa uma única imagem: extrai informações do nome, detecta faces,
         extrai embeddings e adiciona ao índice FAISS.
-        
+
         Args:
             image_path: Caminho completo para a imagem
-            
+
         Returns:
             Dicionário com os resultados do processamento
         """
@@ -198,7 +208,6 @@ class FileProcessor:
                 "origin": file_info["origin"],
                 "faiss_id": faiss_id
             }
-        
         except Exception as e:
             logger.error(f"Error processing image {image_path}: {str(e)}")
             return {
@@ -206,14 +215,14 @@ class FileProcessor:
                 "filename": original_filename if 'original_filename' in locals() else os.path.basename(image_path),
                 "error": str(e)
             }
-    
+
     def process_batch(self, max_workers: int = 4) -> Dict[str, Any]:
         """
         Processa todas as imagens no diretório de upload em paralelo.
-        
+
         Args:
             max_workers: Número máximo de workers para processamento paralelo
-            
+
         Returns:
             Dicionário com estatísticas do processamento
         """
@@ -276,7 +285,6 @@ class FileProcessor:
         self.faiss_index.save(index_path, metadata_path)
         
         elapsed_time = (datetime.now() - start_time).total_seconds()
-        
         logger.info(f"Batch processing completed: {successful} successful, {failed} failed, {elapsed_time:.2f} seconds")
         
         return {
@@ -287,15 +295,15 @@ class FileProcessor:
             "elapsed_time": elapsed_time,
             "details": results
         }
-    
+
     def search_similar_faces(self, image_path: str, k: int = 5) -> Dict[str, Any]:
         """
         Busca faces similares a uma imagem de consulta.
-        
+
         Args:
             image_path: Caminho para a imagem de consulta
             k: Número de resultados a retornar
-            
+
         Returns:
             Dicionário com os resultados da busca
         """
@@ -322,7 +330,6 @@ class FileProcessor:
                     
                     # Considerando que distâncias típicas estão na faixa de 500-1000,
                     # vamos normalizar para uma faixa mais interpretável
-                    
                     # Definir limites para a normalização (ajustar conforme necessário)
                     min_distance = 500  # Considerar qualquer distância < 500 como muito similar
                     max_distance = 1000  # Considerar qualquer distância > 1000 como totalmente diferente
@@ -357,7 +364,6 @@ class FileProcessor:
                 "query_image": os.path.basename(image_path),
                 "results": results
             }
-        
         except Exception as e:
             logger.error(f"Error searching similar faces for {image_path}: {str(e)}")
             return {
