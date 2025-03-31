@@ -17,6 +17,7 @@ import Login from './pages/Login';
 import UserList from './pages/UserList';
 import UserForm from './pages/UserForm';
 import MyAccount from './pages/MyAccount';
+import IndividualRegistration from './pages/IndividualRegistration';
 
 // Serviço de autenticação
 import { authService } from './services/authService';
@@ -185,6 +186,32 @@ function App() {
                     >
                       <Toolbar />
                       <Upload />
+                    </Box>
+                  </>
+                </RoleProtectedRoute>
+              }
+            />
+            <Route
+              path="/individual-registration"
+              element={
+                <RoleProtectedRoute allowedRoles={['administrador', 'cadastrador']}>
+                  <>
+                    <Header open={open} toggleDrawer={toggleDrawer} />
+                    <Sidebar open={open} />
+                    <Box
+                      component="main"
+                      sx={{
+                        flexGrow: 1,
+                        p: 3,
+                        width: '100%',
+                        transition: theme => theme.transitions.create(['margin', 'width'], {
+                          easing: theme.transitions.easing.sharp,
+                          duration: theme.transitions.duration.leavingScreen,
+                        }),
+                      }}
+                    >
+                      <Toolbar />
+                      <IndividualRegistration />
                     </Box>
                   </>
                 </RoleProtectedRoute>

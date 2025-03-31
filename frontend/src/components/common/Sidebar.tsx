@@ -1,4 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
+
 import {
     Drawer,
     List,
@@ -15,6 +16,7 @@ import {
     Upload as UploadIcon,
     Settings as SettingsIcon,
     People as PeopleIcon,
+    Person as PersonAddIcon
 } from '@mui/icons-material';
 import { authService } from '../../services/authService';
 
@@ -35,6 +37,12 @@ const menuItems = [
         text: 'Upload',
         icon: <UploadIcon />,
         path: '/upload',
+        allowedRoles: ['administrador', 'cadastrador']
+    },
+    {
+        text: 'Cadastro de Indivíduo',
+        icon: <PersonAddIcon />,
+        path: '/individual-registration',
         allowedRoles: ['administrador', 'cadastrador']
     },
     {
