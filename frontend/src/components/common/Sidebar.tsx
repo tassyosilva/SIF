@@ -1,5 +1,4 @@
 import { Link, useLocation } from 'react-router-dom';
-
 import {
     Drawer,
     List,
@@ -26,6 +25,7 @@ interface SidebarProps {
 
 const drawerWidth = 240;
 
+// Ajustando as permissões de acordo com os novos requisitos
 const menuItems = [
     {
         text: 'Dashboard',
@@ -37,31 +37,31 @@ const menuItems = [
         text: 'Upload',
         icon: <UploadIcon />,
         path: '/upload',
-        allowedRoles: ['administrador', 'cadastrador']
+        allowedRoles: ['administrador'] // Apenas administrador
     },
     {
         text: 'Cadastro de Indivíduo',
         icon: <PersonAddIcon />,
         path: '/individual-registration',
-        allowedRoles: ['administrador', 'cadastrador']
+        allowedRoles: ['administrador', 'cadastrador'] // Administrador e cadastrador
     },
     {
         text: 'Busca',
         icon: <SearchIcon />,
         path: '/search',
-        allowedRoles: ['administrador', 'consultor']
+        allowedRoles: ['administrador', 'consultor', 'cadastrador'] // Todos os perfis
     },
     {
         text: 'Usuários',
         icon: <PeopleIcon />,
         path: '/users',
-        allowedRoles: ['administrador']
+        allowedRoles: ['administrador'] // Apenas administrador
     },
     {
         text: 'Configurações',
         icon: <SettingsIcon />,
         path: '/settings',
-        allowedRoles: ['administrador']
+        allowedRoles: ['administrador'] // Apenas administrador
     },
 ];
 

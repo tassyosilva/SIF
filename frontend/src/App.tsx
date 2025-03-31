@@ -1,5 +1,4 @@
 import { useState } from 'react';
-
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Box, CssBaseline, Toolbar } from '@mui/material';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
@@ -165,10 +164,11 @@ function App() {
                 </ProtectedRoute>
               }
             />
+            {/* Rota Upload - apenas para administrador */}
             <Route
               path="/upload"
               element={
-                <RoleProtectedRoute allowedRoles={['administrador', 'cadastrador']}>
+                <RoleProtectedRoute allowedRoles={['administrador']}>
                   <>
                     <Header open={open} toggleDrawer={toggleDrawer} />
                     <Sidebar open={open} />
@@ -191,6 +191,7 @@ function App() {
                 </RoleProtectedRoute>
               }
             />
+            {/* Rota Cadastro Individual - para administrador e cadastrador */}
             <Route
               path="/individual-registration"
               element={
@@ -217,10 +218,11 @@ function App() {
                 </RoleProtectedRoute>
               }
             />
+            {/* Rota Busca - para todos os perfis */}
             <Route
               path="/search"
               element={
-                <RoleProtectedRoute allowedRoles={['administrador', 'consultor']}>
+                <RoleProtectedRoute allowedRoles={['administrador', 'consultor', 'cadastrador']}>
                   <>
                     <Header open={open} toggleDrawer={toggleDrawer} />
                     <Sidebar open={open} />
@@ -243,32 +245,7 @@ function App() {
                 </RoleProtectedRoute>
               }
             />
-            <Route
-              path="/settings"
-              element={
-                <RoleProtectedRoute allowedRoles={['administrador']}>
-                  <>
-                    <Header open={open} toggleDrawer={toggleDrawer} />
-                    <Sidebar open={open} />
-                    <Box
-                      component="main"
-                      sx={{
-                        flexGrow: 1,
-                        p: 3,
-                        width: '100%',
-                        transition: theme => theme.transitions.create(['margin', 'width'], {
-                          easing: theme.transitions.easing.sharp,
-                          duration: theme.transitions.duration.leavingScreen,
-                        }),
-                      }}
-                    >
-                      <Toolbar />
-                      <Settings />
-                    </Box>
-                  </>
-                </RoleProtectedRoute>
-              }
-            />
+            {/* Rota Usuários - apenas para administrador */}
             <Route
               path="/users"
               element={
@@ -295,6 +272,7 @@ function App() {
                 </RoleProtectedRoute>
               }
             />
+            {/* Rota de edição/criação de usuário - apenas para administrador */}
             <Route
               path="/users/:id"
               element={
@@ -321,6 +299,34 @@ function App() {
                 </RoleProtectedRoute>
               }
             />
+            {/* Rota Configurações - apenas para administrador */}
+            <Route
+              path="/settings"
+              element={
+                <RoleProtectedRoute allowedRoles={['administrador']}>
+                  <>
+                    <Header open={open} toggleDrawer={toggleDrawer} />
+                    <Sidebar open={open} />
+                    <Box
+                      component="main"
+                      sx={{
+                        flexGrow: 1,
+                        p: 3,
+                        width: '100%',
+                        transition: theme => theme.transitions.create(['margin', 'width'], {
+                          easing: theme.transitions.easing.sharp,
+                          duration: theme.transitions.duration.leavingScreen,
+                        }),
+                      }}
+                    >
+                      <Toolbar />
+                      <Settings />
+                    </Box>
+                  </>
+                </RoleProtectedRoute>
+              }
+            />
+            {/* Rota Minha Conta - para todos os perfis */}
             <Route
               path="/my-account"
               element={
