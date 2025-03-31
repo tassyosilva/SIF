@@ -1,4 +1,5 @@
 import { useState } from 'react';
+
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Box, CssBaseline, Toolbar } from '@mui/material';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
@@ -15,6 +16,7 @@ import Settings from './pages/Settings';
 import Login from './pages/Login';
 import UserList from './pages/UserList';
 import UserForm from './pages/UserForm';
+import MyAccount from './pages/MyAccount';
 
 // Serviço de autenticação
 import { authService } from './services/authService';
@@ -287,6 +289,32 @@ function App() {
                     >
                       <Toolbar />
                       <UserForm />
+                    </Box>
+                  </>
+                </RoleProtectedRoute>
+              }
+            />
+            <Route
+              path="/my-account"
+              element={
+                <RoleProtectedRoute allowedRoles={['administrador', 'consultor', 'cadastrador']}>
+                  <>
+                    <Header open={open} toggleDrawer={toggleDrawer} />
+                    <Sidebar open={open} />
+                    <Box
+                      component="main"
+                      sx={{
+                        flexGrow: 1,
+                        p: 3,
+                        width: '100%',
+                        transition: theme => theme.transitions.create(['margin', 'width'], {
+                          easing: theme.transitions.easing.sharp,
+                          duration: theme.transitions.duration.leavingScreen,
+                        }),
+                      }}
+                    >
+                      <Toolbar />
+                      <MyAccount />
                     </Box>
                   </>
                 </RoleProtectedRoute>

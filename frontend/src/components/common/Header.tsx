@@ -1,10 +1,8 @@
-import { AppBar, Toolbar, Typography, IconButton, Box, Badge, Menu, MenuItem } from '@mui/material';
+import { AppBar, Toolbar, Typography, IconButton, Box, Menu, MenuItem } from '@mui/material';
+
 import {
     Menu as MenuIcon,
-    Notifications as NotificationsIcon,
-    AccountCircle as AccountCircleIcon,
-    Logout as LogoutIcon
-} from '@mui/icons-material';
+    AccountCircle as AccountCircleIcon} from '@mui/icons-material';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import logoImage from '../../assets/logo.png';
@@ -69,12 +67,10 @@ const Header = ({ open, toggleDrawer }: HeaderProps) => {
                         Sistema de Identificação Facial
                     </Typography>
                 </Box>
-                <Box sx={{ display: 'flex' }}>
-                    <IconButton color="inherit">
-                        <Badge badgeContent={4} color="error">
-                            <NotificationsIcon />
-                        </Badge>
-                    </IconButton>
+                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <Typography variant="body1" sx={{ mr: 1, color: 'white' }}>
+                        Olá, {user?.nome_completo?.split(' ')[0]}
+                    </Typography>
                     <IconButton
                         size="large"
                         aria-label="account of current user"
@@ -100,18 +96,15 @@ const Header = ({ open, toggleDrawer }: HeaderProps) => {
                         open={Boolean(anchorEl)}
                         onClose={handleClose}
                     >
-                        <MenuItem onClick={handleClose}>Perfil</MenuItem>
-                        <MenuItem onClick={handleClose}>Minha Conta</MenuItem>
-                        <MenuItem onClick={handleLogout}>Sair</MenuItem>
+                        <MenuItem onClick={() => {
+                            handleClose();
+                            navigate('/my-account');
+                        }}>Minha Conta</MenuItem>
+                        <MenuItem onClick={() => {
+                            handleClose();
+                            handleLogout();
+                        }}>Sair</MenuItem>
                     </Menu>
-                    <IconButton
-                        size="large"
-                        aria-label="logout"
-                        color="inherit"
-                        onClick={handleLogout}
-                    >
-                        <LogoutIcon />
-                    </IconButton>
                 </Box>
             </Toolbar>
         </AppBar>
