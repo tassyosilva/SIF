@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     DEBUG: bool = False
     
     # Configurações do banco de dados
-    DATABASE_URL: PostgresDsn = "postgresql://postgres:adm2000%21%40@192.168.3.204:5432/face_recognition"
+    DATABASE_URL: PostgresDsn = "postgresql://postgres:senha@enderecodoservidor:5432/face_recognition"
     
     # Configurações de diretórios
     UPLOAD_DIR: str = os.path.join(os.getcwd(), "data", "uploads")
@@ -30,6 +30,14 @@ class Settings(BaseSettings):
     # Configurações de processamento
     BATCH_WORKERS: int = 4
     SIMILARITY_THRESHOLD: float = 0.7
+    
+    # Configurações de e-mail
+    MAIL_USERNAME: str = os.getenv("MAIL_USERNAME", "")
+    MAIL_PASSWORD: str = os.getenv("MAIL_PASSWORD", "")
+    MAIL_FROM: str = os.getenv("MAIL_FROM", "")
+    MAIL_FROM_NAME: str = os.getenv("MAIL_FROM_NAME", "Sistema de Identificação Facial")
+    MAIL_PORT: int = int(os.getenv("MAIL_PORT", "587"))
+    MAIL_SERVER: str = os.getenv("MAIL_SERVER", "smtp.gmail.com")
     
     class Config:
         env_file = ".env"

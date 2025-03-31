@@ -7,8 +7,13 @@ from ...models.user import User, UserType
 from ...schemas.user import UserCreate, UserInDB, UserUpdate
 from ...core.security import hash_password
 from ...core.permissions import role_required
+from ...services.email_service import send_welcome_email
+import logging
+
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
+
 
 @router.get("/", response_model=List[UserInDB])
 def get_users(
@@ -21,14 +26,13 @@ def get_users(
     Retorna uma lista de usuários com filtros opcionais.
     """
     query = db.query(User)
-    
     # Aplicar filtros se fornecidos
     if nome:
         query = query.filter(User.nome_completo.ilike(f"%{nome}%"))
-    
     # Aplicar paginação
     users = query.offset(skip).limit(limit).all()
     return users
+
 
 @router.get("/{user_id}", response_model=UserInDB)
 def get_user(user_id: int, db: Session = Depends(get_db)):
@@ -40,10 +44,14 @@ def get_user(user_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Usuário não encontrado")
     return user
 
+
 @router.post("/", response_model=UserInDB)
-def create_user(user: UserCreate, db: Session = Depends(get_db)):
+async def create_user(
+    user: UserCreate, 
+    db: Session = Depends(get_db)
+):
     """
-    Cria um novo usuário.
+    Cria um novo usuário e envia um e-mail de boas-vindas.
     """
     # Verificar se usuário já existe
     existing_user = (
@@ -58,7 +66,6 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
         )
         .first()
     )
-
     if existing_user:
         # Determinar qual campo está duplicado
         if existing_user.login == user.login:
@@ -82,7 +89,20 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(db_user)
     
+    # Enviar e-mail de boas-vindas
+    try:
+        logger.info(f"E-mail de boas-vindas agendado para envio para {user.email}")
+        await send_welcome_email(
+            email_to=user.email,
+            username=user.login,
+            password=user.senha
+        )
+    except Exception as e:
+        # Apenas logamos o erro, não queremos falhar a API se o e-mail falhar
+        logger.error(f"Erro ao enviar e-mail de boas-vindas: {str(e)}")
+    
     return db_user
+
 
 @router.put("/{user_id}", response_model=UserInDB)
 def update_user(user_id: int, user: UserUpdate, db: Session = Depends(get_db)):
@@ -92,14 +112,13 @@ def update_user(user_id: int, user: UserUpdate, db: Session = Depends(get_db)):
     db_user = db.query(User).filter(User.id == user_id).first()
     if not db_user:
         raise HTTPException(status_code=404, detail="Usuário não encontrado")
-    
     # Atualizar apenas os campos fornecidos
     for key, value in user.dict(exclude_unset=True).items():
         setattr(db_user, key, value)
-    
     db.commit()
     db.refresh(db_user)
     return db_user
+
 
 @router.delete("/{user_id}")
 def delete_user(user_id: int, db: Session = Depends(get_db)):
@@ -109,22 +128,18 @@ def delete_user(user_id: int, db: Session = Depends(get_db)):
     db_user = db.query(User).filter(User.id == user_id).first()
     if not db_user:
         raise HTTPException(status_code=404, detail="Usuário não encontrado")
-    
     # Verificar se é o último administrador
     if db_user.tipo_usuario == UserType.ADMINISTRADOR:
         admin_count = db.query(User).filter(
-            User.tipo_usuario == UserType.ADMINISTRADOR, 
+            User.tipo_usuario == UserType.ADMINISTRADOR,
             User.id != user_id
         ).count()
-        
         if admin_count == 0:
             raise HTTPException(
-                status_code=400, 
+                status_code=400,
                 detail="Não é possível remover o único administrador do sistema"
             )
-    
     # Exclusão física do usuário
     db.delete(db_user)
     db.commit()
-    
     return {"message": "Usuário removido com sucesso"}
