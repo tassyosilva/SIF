@@ -22,14 +22,14 @@ api.interceptors.request.use(
     }
 );
 
-// Interceptor para tratamento de erros de autenticação
+// Interceptor para tratamento de erros
 api.interceptors.response.use(
     (response) => response,
     async (error) => {
         const originalRequest = error.config;
 
         // Se for erro de autorização e ainda não tentou refresh
-        if (error.response.status === 401 && !originalRequest._retry) {
+        if (error.response && error.response.status === 401 && !originalRequest._retry) {
             originalRequest._retry = true;
 
             try {
@@ -47,6 +47,19 @@ api.interceptors.response.use(
                 window.location.href = '/login';
                 return Promise.reject(refreshError);
             }
+        }
+
+        // Melhorar o tratamento de erros para fornecer mensagens mais claras
+        if (error.response) {
+            // O servidor respondeu com um status de erro (4xx, 5xx)
+            console.error('Erro da API:', error.response.status, error.response.data);
+        } else if (error.request) {
+            // A requisição foi feita mas não houve resposta
+            console.error('Sem resposta do servidor:', error.request);
+            error.message = 'O servidor não respondeu à solicitação. Verifique sua conexão de rede.';
+        } else {
+            // Erro ao configurar a requisição
+            console.error('Erro na configuração da requisição:', error.message);
         }
 
         return Promise.reject(error);

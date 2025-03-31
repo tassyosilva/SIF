@@ -15,7 +15,6 @@ def get_users(
     skip: int = 0,
     limit: int = 100,
     nome: Optional[str] = None,
-    ativo: Optional[bool] = None,
     db: Session = Depends(get_db)
 ):
     """
@@ -26,8 +25,6 @@ def get_users(
     # Aplicar filtros se fornecidos
     if nome:
         query = query.filter(User.nome_completo.ilike(f"%{nome}%"))
-    if ativo is not None:
-        query = query.filter(User.ativo == ativo)
     
     # Aplicar paginação
     users = query.offset(skip).limit(limit).all()
@@ -107,7 +104,7 @@ def update_user(user_id: int, user: UserUpdate, db: Session = Depends(get_db)):
 @router.delete("/{user_id}")
 def delete_user(user_id: int, db: Session = Depends(get_db)):
     """
-    Remove um usuário (ou marca como inativo).
+    Remove um usuário (exclusão física).
     """
     db_user = db.query(User).filter(User.id == user_id).first()
     if not db_user:
@@ -116,8 +113,7 @@ def delete_user(user_id: int, db: Session = Depends(get_db)):
     # Verificar se é o último administrador
     if db_user.tipo_usuario == UserType.ADMINISTRADOR:
         admin_count = db.query(User).filter(
-            User.tipo_usuario == UserType.ADMINISTRADOR,
-            User.ativo == True,
+            User.tipo_usuario == UserType.ADMINISTRADOR, 
             User.id != user_id
         ).count()
         
@@ -127,11 +123,8 @@ def delete_user(user_id: int, db: Session = Depends(get_db)):
                 detail="Não é possível remover o único administrador do sistema"
             )
     
-    # Opção 1: Exclusão física (uncommment para usar)
-    # db.delete(db_user)
-    
-    # Opção 2: Exclusão lógica (mais seguro)
-    db_user.ativo = False
-    
+    # Exclusão física do usuário
+    db.delete(db_user)
     db.commit()
+    
     return {"message": "Usuário removido com sucesso"}

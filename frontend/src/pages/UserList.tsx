@@ -97,8 +97,10 @@ const UserList = () => {
         if (!userToDelete) return;
 
         setLoading(true);
+        setError(null);
+
         try {
-            await deleteUser(userToDelete.id);
+            const result = await deleteUser(userToDelete.id);
             setDeleteSuccess(`Usuário ${userToDelete.nome_completo} excluído com sucesso!`);
             setDeleteDialogOpen(false);
             setUserToDelete(null);
@@ -112,7 +114,17 @@ const UserList = () => {
             }, 3000);
         } catch (err: any) {
             console.error('Erro ao excluir usuário:', err);
-            setError(err.response?.data?.detail || 'Erro ao excluir usuário');
+
+            // Tratamento de erro mais robusto
+            let errorMessage = 'Erro ao excluir usuário';
+
+            if (err.response && err.response.data) {
+                errorMessage = err.response.data.detail || errorMessage;
+            } else if (err.message) {
+                errorMessage = err.message;
+            }
+
+            setError(errorMessage);
             setDeleteDialogOpen(false);
         } finally {
             setLoading(false);
