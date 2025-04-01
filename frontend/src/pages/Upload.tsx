@@ -35,6 +35,10 @@ import {
     TableRow,
     TableCell,
     Pagination,
+    Container,
+    alpha,
+    styled,
+    useTheme
 } from '@mui/material';
 import {
     CloudUpload as UploadIcon,
@@ -45,6 +49,10 @@ import {
     Image as ImageIcon,
     Person as PersonIcon,
     Info as InfoIcon,
+    FilterNone as FilterNoneIcon,
+    PhotoLibrary as PhotoLibraryIcon,
+    UploadFile as UploadFileIcon,
+    Assessment as AssessmentIcon
 } from '@mui/icons-material';
 import { useDropzone } from 'react-dropzone';
 import { api } from '../services/api';
@@ -52,6 +60,156 @@ import { uploadImage } from '../services/personService';
 
 // Constante para definir o limite de itens por página
 const ITEMS_PER_PAGE = 20;
+
+// Cores principais
+const PRIMARY_COLOR = '#000000';
+const GOLD_COLOR = '#D4AF37';
+
+// Componente estilizado para o Paper principal com animação
+const StyledPaper = styled(Paper)(({ theme }) => ({
+    padding: theme.spacing(4),
+    borderRadius: '12px',
+    backgroundColor: 'white',
+    boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.1)',
+    border: `1px solid ${alpha(GOLD_COLOR, 0.1)}`,
+    position: 'relative',
+    overflow: 'hidden',
+    transition: 'all 0.3s ease',
+    animation: 'fadeIn 0.5s ease-in-out',
+    '@keyframes fadeIn': {
+        from: { opacity: 0, transform: 'translateY(10px)' },
+        to: { opacity: 1, transform: 'translateY(0)' }
+    },
+    '&::before': {
+        content: '""',
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        height: '3px',
+        background: `linear-gradient(90deg, ${alpha(GOLD_COLOR, 0)}, ${GOLD_COLOR}, ${alpha(GOLD_COLOR, 0)})`,
+    }
+}));
+
+// Componente estilizado para os cards de estatísticas
+const StatsCard = styled(Card)(({ theme }) => ({
+    height: '100%',
+    backgroundColor: 'white',
+    border: `1px solid ${alpha(GOLD_COLOR, 0.2)}`,
+    borderRadius: '12px',
+    boxShadow: `0 8px 24px 0 ${alpha('#000', 0.05)}`,
+    transition: 'all 0.3s ease',
+    '&:hover': {
+        transform: 'translateY(-5px)',
+        boxShadow: `0 12px 30px 0 ${alpha('#000', 0.1)}`
+    }
+}));
+
+// Zona de upload estilizada
+const StyledDropzone = styled(Box)(({ theme, isDragActive }: { theme: any, isDragActive: boolean }) => ({
+    border: '2px dashed',
+    borderColor: isDragActive ? GOLD_COLOR : alpha(PRIMARY_COLOR, 0.2),
+    borderRadius: '12px',
+    padding: theme.spacing(4),
+    textAlign: 'center',
+    backgroundColor: isDragActive ? alpha(GOLD_COLOR, 0.05) : alpha('#f8f8f8', 0.5),
+    cursor: 'pointer',
+    marginBottom: theme.spacing(3),
+    minHeight: 200,
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'center',
+    alignItems: 'center',
+    transition: 'all 0.3s ease',
+    '&:hover': {
+        borderColor: GOLD_COLOR,
+        backgroundColor: alpha(GOLD_COLOR, 0.05),
+        transform: 'translateY(-2px)',
+        boxShadow: `0 5px 15px ${alpha('#000', 0.05)}`
+    }
+}));
+
+// Botão primário estilizado
+const PrimaryButton = styled(Button)(({ theme }) => ({
+    backgroundColor: GOLD_COLOR,
+    color: '#000',
+    padding: '10px 24px',
+    borderRadius: '8px',
+    fontWeight: 'bold',
+    transition: 'all 0.3s ease',
+    boxShadow: `0 4px 12px ${alpha(GOLD_COLOR, 0.3)}`,
+    '&:hover': {
+        backgroundColor: '#E6C200',
+        transform: 'translateY(-2px)',
+        boxShadow: `0 8px 20px ${alpha(GOLD_COLOR, 0.4)}`
+    },
+    '&.Mui-disabled': {
+        backgroundColor: alpha(GOLD_COLOR, 0.3),
+        color: alpha('#000', 0.5)
+    }
+}));
+
+// Botão secundário estilizado
+const SecondaryButton = styled(Button)(({ theme }) => ({
+    borderColor: GOLD_COLOR,
+    color: GOLD_COLOR,
+    padding: '10px 24px',
+    borderRadius: '8px',
+    fontWeight: 'bold',
+    transition: 'all 0.3s ease',
+    '&:hover': {
+        borderColor: GOLD_COLOR,
+        backgroundColor: alpha(GOLD_COLOR, 0.1),
+        transform: 'translateY(-2px)',
+    }
+}));
+
+// Componente estilizado para Divider personalizado
+const StyledDivider = styled(Divider)({
+    borderColor: alpha(GOLD_COLOR, 0.2),
+    margin: '24px 0',
+    width: '100%'
+});
+
+// Componente de barra de progresso estilizado
+const StyledLinearProgress = styled(LinearProgress)(({ theme }) => ({
+    height: 8,
+    borderRadius: 4,
+    '& .MuiLinearProgress-bar': {
+        borderRadius: 4,
+    }
+}));
+
+// Tabs estilizadas
+const StyledTabs = styled(Tabs)(({ theme }) => ({
+    '& .MuiTab-root': {
+        fontWeight: 'bold',
+        textTransform: 'none',
+        transition: 'all 0.2s ease',
+        '&.Mui-selected': {
+            color: GOLD_COLOR,
+        }
+    },
+    '& .MuiTabs-indicator': {
+        backgroundColor: GOLD_COLOR,
+        height: 3,
+        borderRadius: '3px 3px 0 0'
+    }
+}));
+
+// Stepper estilizado
+const StyledStepper = styled(Stepper)(({ theme }) => ({
+    '& .MuiStepIcon-root.Mui-active': {
+        color: GOLD_COLOR,
+    },
+    '& .MuiStepIcon-root.Mui-completed': {
+        color: GOLD_COLOR,
+    },
+    '& .MuiStepLabel-label.Mui-active': {
+        fontWeight: 'bold',
+        color: PRIMARY_COLOR,
+    }
+}));
 
 interface UploadedFile {
     id: string;
@@ -73,6 +231,7 @@ interface UploadProgress {
 }
 
 const Upload = () => {
+    const theme = useTheme();
     const [activeStep, setActiveStep] = useState(0);
     const [files, setFiles] = useState<UploadedFile[]>([]);
     const [loading, setLoading] = useState(false);
@@ -300,99 +459,193 @@ const Upload = () => {
     const steps = ['Selecionar Arquivos', 'Processar Imagens', 'Resultados'];
 
     return (
-        <Box>
-            <Typography variant="h4" gutterBottom>
-                Upload de Imagens
-            </Typography>
+        <Container maxWidth="lg" sx={{ py: 3 }}>
+            <Box sx={{
+                mb: 4,
+                display: 'flex',
+                alignItems: 'center'
+            }}>
+                <Box sx={{
+                    backgroundColor: alpha(GOLD_COLOR, 0.1),
+                    borderRadius: '50%',
+                    p: 1,
+                    mr: 2,
+                    display: 'flex'
+                }}>
+                    <UploadFileIcon sx={{ color: GOLD_COLOR, fontSize: 28 }} />
+                </Box>
+                <Typography
+                    variant="h4"
+                    sx={{
+                        fontWeight: 600,
+                        position: 'relative',
+                        '&::after': {
+                            content: '""',
+                            position: 'absolute',
+                            width: '40%',
+                            height: '3px',
+                            bottom: '-8px',
+                            left: '0',
+                            backgroundColor: GOLD_COLOR,
+                            borderRadius: '2px'
+                        }
+                    }}
+                >
+                    Upload de Imagens
+                </Typography>
+            </Box>
 
-            <Paper elevation={3} sx={{ p: 3, mb: 3 }}>
-                <Stepper activeStep={activeStep} sx={{ mb: 4 }}>
-                    {steps.map((label) => (
+            <StyledPaper>
+                <StyledStepper activeStep={activeStep} sx={{ mb: 4 }}>
+                    {steps.map((label, index) => (
                         <Step key={label}>
                             <StepLabel>{label}</StepLabel>
                         </Step>
                     ))}
-                </Stepper>
+                </StyledStepper>
 
                 {error && (
-                    <Alert severity="error" sx={{ mb: 2 }}>
+                    <Alert
+                        severity="error"
+                        variant="filled"
+                        sx={{
+                            mb: 3,
+                            borderRadius: '8px',
+                            boxShadow: '0 4px 12px rgba(211, 47, 47, 0.15)'
+                        }}
+                    >
                         {error}
                     </Alert>
                 )}
 
                 {success && (
-                    <Alert severity="success" sx={{ mb: 2 }}>
+                    <Alert
+                        severity="success"
+                        variant="filled"
+                        sx={{
+                            mb: 3,
+                            borderRadius: '8px',
+                            boxShadow: '0 4px 12px rgba(46, 125, 50, 0.15)'
+                        }}
+                    >
                         {success}
                     </Alert>
                 )}
 
                 {activeStep === 0 && (
                     <Box>
-                        <Typography variant="body1" gutterBottom>
+                        <Typography variant="body1" sx={{ mb: 2, color: alpha(PRIMARY_COLOR, 0.7) }}>
                             Arraste e solte imagens aqui ou clique para selecionar arquivos.
                         </Typography>
 
-                        <Box
-                            {...getRootProps()}
-                            sx={{
-                                border: '2px dashed',
-                                borderColor: isDragActive ? 'primary.main' : 'grey.400',
-                                borderRadius: 2,
-                                p: 3,
-                                textAlign: 'center',
-                                bgcolor: isDragActive ? 'rgba(25, 118, 210, 0.04)' : 'transparent',
-                                cursor: 'pointer',
-                                mb: 3,
-                                minHeight: 200,
-                                display: 'flex',
-                                flexDirection: 'column',
-                                justifyContent: 'center',
-                                alignItems: 'center',
-                            }}
-                        >
+                        <StyledDropzone theme={undefined} {...getRootProps()} isDragActive={isDragActive}>
                             <input {...getInputProps()} />
-                            <UploadIcon sx={{ fontSize: 48, color: 'primary.main', mb: 2 }} />
+                            <UploadIcon sx={{ fontSize: 48, color: GOLD_COLOR, mb: 2 }} />
                             {isDragActive ? (
-                                <Typography>Solte as imagens aqui...</Typography>
+                                <Typography variant="h6" sx={{ color: PRIMARY_COLOR, fontWeight: 'bold' }}>
+                                    Solte as imagens aqui...
+                                </Typography>
                             ) : (
-                                <Typography>
-                                    Arraste e solte imagens aqui, ou clique para selecionar arquivos
+                                <Typography variant="h6" sx={{ color: PRIMARY_COLOR, fontWeight: 'bold', mb: 1 }}>
+                                    Arraste e solte imagens aqui
                                 </Typography>
                             )}
-                            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                                Formatos aceitos: JPG, JPEG, PNG, BMP (máx. 5MB)
+                            <Typography variant="body1" sx={{ color: alpha(PRIMARY_COLOR, 0.6), mb: 2 }}>
+                                ou clique para selecionar arquivos
                             </Typography>
-                        </Box>
+                            <Chip
+                                label="Formatos aceitos: JPG, JPEG, PNG, BMP (máx. 5MB)"
+                                size="small"
+                                sx={{
+                                    bgcolor: alpha(GOLD_COLOR, 0.1),
+                                    color: alpha(PRIMARY_COLOR, 0.7),
+                                    borderRadius: '4px'
+                                }}
+                            />
+                        </StyledDropzone>
 
-                        {/* Exibição de arquivos - Simplificada - Apenas lista de nomes */}
+                        {/* Exibição de arquivos */}
                         {files.length > 0 && (
                             <Box>
-                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                                    <Typography variant="h6">
-                                        {files.length} {files.length === 1 ? 'arquivo selecionado' : 'arquivos selecionados'}
-                                    </Typography>
+                                <Box sx={{
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center',
+                                    mb: 2,
+                                    p: 2,
+                                    borderRadius: '8px',
+                                    bgcolor: alpha(GOLD_COLOR, 0.05)
+                                }}>
+                                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                        <FilterNoneIcon sx={{ color: GOLD_COLOR, mr: 1 }} />
+                                        <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+                                            {files.length} {files.length === 1 ? 'arquivo selecionado' : 'arquivos selecionados'}
+                                        </Typography>
+                                    </Box>
                                     <Button
                                         variant="outlined"
+                                        color="error"
                                         startIcon={<DeleteIcon />}
                                         onClick={resetUpload}
                                         disabled={loading}
+                                        sx={{
+                                            borderRadius: '8px',
+                                            transition: 'all 0.2s ease',
+                                            '&:hover': {
+                                                transform: 'translateY(-2px)',
+                                                boxShadow: '0 4px 8px rgba(0,0,0,0.1)'
+                                            }
+                                        }}
                                     >
                                         Limpar Tudo
                                     </Button>
                                 </Box>
 
-                                {/* Lista simplificada de arquivos */}
-                                <List sx={{ maxHeight: '300px', overflow: 'auto', border: '1px solid', borderColor: 'divider', borderRadius: 1 }}>
+                                {/* Lista de arquivos */}
+                                <List sx={{
+                                    maxHeight: '300px',
+                                    overflow: 'auto',
+                                    border: `1px solid ${alpha(PRIMARY_COLOR, 0.1)}`,
+                                    borderRadius: '8px',
+                                    bgcolor: 'white'
+                                }}>
                                     {paginatedFiles().map((file) => (
-                                        <ListItem key={file.id} divider>
+                                        <ListItem
+                                            key={file.id}
+                                            divider
+                                            sx={{
+                                                transition: 'all 0.2s ease',
+                                                '&:hover': {
+                                                    bgcolor: alpha(GOLD_COLOR, 0.05)
+                                                }
+                                            }}
+                                        >
                                             <ListItemIcon>
-                                                <ImageIcon color="primary" />
+                                                <Avatar
+                                                    sx={{
+                                                        bgcolor: alpha(GOLD_COLOR, 0.1),
+                                                        color: GOLD_COLOR
+                                                    }}
+                                                >
+                                                    <ImageIcon />
+                                                </Avatar>
                                             </ListItemIcon>
                                             <ListItemText
                                                 primary={file.file.name}
                                                 secondary={`${(file.file.size / 1024).toFixed(1)} KB`}
+                                                primaryTypographyProps={{ fontWeight: 'medium' }}
                                             />
-                                            <IconButton size="small" onClick={() => removeFile(file.id)}>
+                                            <IconButton
+                                                size="small"
+                                                onClick={() => removeFile(file.id)}
+                                                sx={{
+                                                    color: 'error.main',
+                                                    bgcolor: alpha('#f44336', 0.1),
+                                                    '&:hover': {
+                                                        bgcolor: alpha('#f44336', 0.2),
+                                                    }
+                                                }}
+                                            >
                                                 <DeleteIcon fontSize="small" />
                                             </IconButton>
                                         </ListItem>
@@ -406,146 +659,301 @@ const Upload = () => {
                                             page={currentPage}
                                             onChange={handlePageChange}
                                             color="primary"
+                                            sx={{
+                                                '& .MuiPaginationItem-root.Mui-selected': {
+                                                    backgroundColor: GOLD_COLOR,
+                                                    color: 'black'
+                                                }
+                                            }}
                                         />
                                     </Box>
                                 )}
                             </Box>
                         )}
 
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 3 }}>
-                            <Button
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 4 }}>
+                            <SecondaryButton
                                 variant="outlined"
                                 onClick={resetUpload}
                             >
                                 Cancelar
-                            </Button>
-                            <Button
+                            </SecondaryButton>
+                            <PrimaryButton
                                 variant="contained"
                                 endIcon={<UploadIcon />}
                                 onClick={uploadFiles}
                                 disabled={files.length === 0 || loading}
                             >
                                 {loading ? 'Processando...' : 'Processar Imagens'}
-                            </Button>
+                            </PrimaryButton>
                         </Box>
                     </Box>
                 )}
 
                 {activeStep === 1 && (
                     <Box>
-                        <Typography variant="h6" gutterBottom>
-                            Processando Imagens
-                        </Typography>
+                        <Box sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            mb: 3,
+                            p: 2,
+                            borderRadius: '8px',
+                            bgcolor: alpha(GOLD_COLOR, 0.05)
+                        }}>
+                            <PhotoLibraryIcon sx={{ color: GOLD_COLOR, mr: 2 }} />
+                            <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+                                Processando Imagens
+                            </Typography>
+                        </Box>
 
                         {/* Progresso geral */}
-                        <Box sx={{ mb: 3 }}>
-                            <Grid container spacing={2}>
+                        <Box sx={{ mb: 4 }}>
+                            <Grid container spacing={3}>
                                 <Grid item xs={12} sm={6} md={3}>
-                                    <Card>
+                                    <StatsCard>
                                         <CardContent>
-                                            <Typography color="text.secondary" gutterBottom>
+                                            <Typography color="textSecondary" gutterBottom>
                                                 Total
                                             </Typography>
-                                            <Typography variant="h5">
-                                                {uploadProgress.totalFiles}
-                                            </Typography>
+                                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                                <Box
+                                                    sx={{
+                                                        mr: 2,
+                                                        p: 1,
+                                                        borderRadius: '50%',
+                                                        bgcolor: alpha(GOLD_COLOR, 0.1)
+                                                    }}
+                                                >
+                                                    <FilterNoneIcon sx={{ color: GOLD_COLOR }} />
+                                                </Box>
+                                                <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
+                                                    {uploadProgress.totalFiles}
+                                                </Typography>
+                                            </Box>
                                         </CardContent>
-                                    </Card>
+                                    </StatsCard>
                                 </Grid>
                                 <Grid item xs={12} sm={6} md={3}>
-                                    <Card>
+                                    <StatsCard>
                                         <CardContent>
-                                            <Typography color="text.secondary" gutterBottom>
+                                            <Typography color="textSecondary" gutterBottom>
                                                 Processados
                                             </Typography>
-                                            <Typography variant="h5">
-                                                {uploadProgress.processed}
-                                            </Typography>
+                                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                                <Box
+                                                    sx={{
+                                                        mr: 2,
+                                                        p: 1,
+                                                        borderRadius: '50%',
+                                                        bgcolor: alpha('#2196f3', 0.1)
+                                                    }}
+                                                >
+                                                    <RefreshIcon sx={{ color: '#2196f3' }} />
+                                                </Box>
+                                                <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
+                                                    {uploadProgress.processed}
+                                                </Typography>
+                                            </Box>
                                         </CardContent>
-                                    </Card>
+                                    </StatsCard>
                                 </Grid>
                                 <Grid item xs={12} sm={6} md={3}>
-                                    <Card>
+                                    <StatsCard>
                                         <CardContent>
-                                            <Typography color="text.secondary" gutterBottom>
+                                            <Typography color="textSecondary" gutterBottom>
                                                 Sucesso
                                             </Typography>
-                                            <Typography variant="h5" color="success.main">
-                                                {uploadProgress.successful}
-                                            </Typography>
+                                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                                <Box
+                                                    sx={{
+                                                        mr: 2,
+                                                        p: 1,
+                                                        borderRadius: '50%',
+                                                        bgcolor: alpha('#4caf50', 0.1)
+                                                    }}
+                                                >
+                                                    <CheckCircleIcon sx={{ color: '#4caf50' }} />
+                                                </Box>
+                                                <Typography
+                                                    variant="h4"
+                                                    color="success.main"
+                                                    sx={{ fontWeight: 'bold' }}
+                                                >
+                                                    {uploadProgress.successful}
+                                                </Typography>
+                                            </Box>
                                         </CardContent>
-                                    </Card>
+                                    </StatsCard>
                                 </Grid>
                                 <Grid item xs={12} sm={6} md={3}>
-                                    <Card>
+                                    <StatsCard>
                                         <CardContent>
-                                            <Typography color="text.secondary" gutterBottom>
+                                            <Typography color="textSecondary" gutterBottom>
                                                 Falhas
                                             </Typography>
-                                            <Typography variant="h5" color="error.main">
-                                                {uploadProgress.failed}
-                                            </Typography>
+                                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                                <Box
+                                                    sx={{
+                                                        mr: 2,
+                                                        p: 1,
+                                                        borderRadius: '50%',
+                                                        bgcolor: alpha('#f44336', 0.1)
+                                                    }}
+                                                >
+                                                    <ErrorIcon sx={{ color: '#f44336' }} />
+                                                </Box>
+                                                <Typography
+                                                    variant="h4"
+                                                    color="error.main"
+                                                    sx={{ fontWeight: 'bold' }}
+                                                >
+                                                    {uploadProgress.failed}
+                                                </Typography>
+                                            </Box>
                                         </CardContent>
-                                    </Card>
+                                    </StatsCard>
                                 </Grid>
                             </Grid>
                         </Box>
 
                         {/* Barra de progresso geral */}
-                        <Box sx={{ mb: 3 }}>
-                            <Typography variant="body2" sx={{ mb: 1 }}>
+                        <Box sx={{
+                            mb: 3,
+                            p: 3,
+                            borderRadius: '12px',
+                            border: `1px solid ${alpha(GOLD_COLOR, 0.2)}`,
+                            bgcolor: alpha(GOLD_COLOR, 0.02)
+                        }}>
+                            <Typography variant="body1" sx={{ mb: 1, fontWeight: 'medium' }}>
                                 Progresso geral: {Math.round(uploadProgress.overallProgress)}%
                             </Typography>
-                            <LinearProgress
+                            <StyledLinearProgress
                                 variant="determinate"
                                 value={uploadProgress.overallProgress}
-                                sx={{ height: 10, borderRadius: 5 }}
+                                sx={{
+                                    height: 10,
+                                    borderRadius: 5,
+                                    backgroundColor: alpha(GOLD_COLOR, 0.2),
+                                    '& .MuiLinearProgress-bar': {
+                                        backgroundColor: GOLD_COLOR
+                                    }
+                                }}
                             />
                         </Box>
 
                         {/* Abas para diferentes visualizações */}
-                        <Box sx={{ mb: 2 }}>
-                            <Tabs value={tabValue} onChange={handleTabChange}>
-                                <Tab label="Resumo" />
-                                <Tab label="Detalhes" />
-                            </Tabs>
+                        <Box sx={{ mb: 3 }}>
+                            <StyledTabs value={tabValue} onChange={handleTabChange}>
+                                <Tab
+                                    label="Resumo"
+                                    icon={<AssessmentIcon />}
+                                    iconPosition="start"
+                                />
+                                <Tab
+                                    label="Detalhes"
+                                    icon={<InfoIcon />}
+                                    iconPosition="start"
+                                />
+                            </StyledTabs>
+                            <StyledDivider />
                         </Box>
 
                         {tabValue === 0 ? (
-                            <Alert severity="info">
-                                Processando {uploadProgress.totalFiles} arquivos.
-                                {uploadProgress.processed} processados ({uploadProgress.successful} com sucesso, {uploadProgress.failed} falhas).
-                                {loading ? ' Processamento em andamento...' : ' Processamento concluído.'}
+                            <Alert
+                                severity="info"
+                                variant="filled"
+                                sx={{
+                                    mb: 3,
+                                    borderRadius: '8px',
+                                    boxShadow: '0 4px 12px rgba(33, 150, 243, 0.15)'
+                                }}
+                            >
+                                <Box sx={{ fontWeight: 'medium', mb: 1 }}>Status do Processamento:</Box>
+                                <Box>
+                                    • Processando {uploadProgress.totalFiles} arquivos<br />
+                                    • {uploadProgress.processed} processados ({uploadProgress.successful} com sucesso, {uploadProgress.failed} falhas)<br />
+                                    • {loading ? 'Processamento em andamento...' : 'Processamento concluído.'}
+                                </Box>
                             </Alert>
                         ) : (
                             <Box>
-                                <TableContainer>
+                                <TableContainer
+                                    component={Paper}
+                                    elevation={0}
+                                    sx={{
+                                        border: `1px solid ${alpha('#000', 0.1)}`,
+                                        borderRadius: '8px',
+                                        mb: 3
+                                    }}
+                                >
                                     <Table size="small">
-                                        <TableHead>
+                                        <TableHead sx={{ bgcolor: alpha(GOLD_COLOR, 0.05) }}>
                                             <TableRow>
-                                                <TableCell>Arquivo</TableCell>
-                                                <TableCell>Status</TableCell>
-                                                <TableCell>Progresso</TableCell>
-                                                <TableCell>Ações</TableCell>
+                                                <TableCell sx={{ fontWeight: 'bold' }}>Arquivo</TableCell>
+                                                <TableCell sx={{ fontWeight: 'bold' }}>Status</TableCell>
+                                                <TableCell sx={{ fontWeight: 'bold' }}>Progresso</TableCell>
+                                                <TableCell sx={{ fontWeight: 'bold' }}>Ações</TableCell>
                                             </TableRow>
                                         </TableHead>
                                         <TableBody>
                                             {paginatedFiles().map((file) => (
-                                                <TableRow key={file.id}>
+                                                <TableRow
+                                                    key={file.id}
+                                                    sx={{
+                                                        '&:hover': {
+                                                            bgcolor: alpha(GOLD_COLOR, 0.05)
+                                                        }
+                                                    }}
+                                                >
                                                     <TableCell>{file.file.name}</TableCell>
                                                     <TableCell>
                                                         {file.status === 'success' ? (
-                                                            <Chip size="small" icon={<CheckCircleIcon />} label="Sucesso" color="success" />
+                                                            <Chip
+                                                                size="small"
+                                                                icon={<CheckCircleIcon />}
+                                                                label="Sucesso"
+                                                                color="success"
+                                                                sx={{
+                                                                    fontWeight: 'bold',
+                                                                    boxShadow: '0 2px 5px rgba(0, 0, 0, 0.1)'
+                                                                }}
+                                                            />
                                                         ) : file.status === 'error' ? (
-                                                            <Chip size="small" icon={<ErrorIcon />} label="Erro" color="error" />
+                                                            <Chip
+                                                                size="small"
+                                                                icon={<ErrorIcon />}
+                                                                label="Erro"
+                                                                color="error"
+                                                                sx={{
+                                                                    fontWeight: 'bold',
+                                                                    boxShadow: '0 2px 5px rgba(0, 0, 0, 0.1)'
+                                                                }}
+                                                            />
                                                         ) : file.status === 'processing' ? (
-                                                            <Chip size="small" icon={<CircularProgress size={16} />} label="Processando" color="primary" />
+                                                            <Chip
+                                                                size="small"
+                                                                icon={<CircularProgress size={16} />}
+                                                                label="Processando"
+                                                                color="primary"
+                                                                sx={{
+                                                                    fontWeight: 'bold',
+                                                                    boxShadow: '0 2px 5px rgba(0, 0, 0, 0.1)'
+                                                                }}
+                                                            />
                                                         ) : (
-                                                            <Chip size="small" label="Pendente" color="default" />
+                                                            <Chip
+                                                                size="small"
+                                                                label="Pendente"
+                                                                color="default"
+                                                                sx={{
+                                                                    fontWeight: 'bold',
+                                                                    boxShadow: '0 2px 5px rgba(0, 0, 0, 0.1)'
+                                                                }}
+                                                            />
                                                         )}
                                                     </TableCell>
                                                     <TableCell width="30%">
-                                                        <LinearProgress
+                                                        <StyledLinearProgress
                                                             variant="determinate"
                                                             value={file.progress}
                                                             color={
@@ -556,7 +964,17 @@ const Upload = () => {
                                                         />
                                                     </TableCell>
                                                     <TableCell>
-                                                        <IconButton size="small" onClick={() => showFileDetails(file)}>
+                                                        <IconButton
+                                                            size="small"
+                                                            onClick={() => showFileDetails(file)}
+                                                            sx={{
+                                                                bgcolor: alpha(GOLD_COLOR, 0.1),
+                                                                color: GOLD_COLOR,
+                                                                '&:hover': {
+                                                                    bgcolor: alpha(GOLD_COLOR, 0.2),
+                                                                }
+                                                            }}
+                                                        >
                                                             <InfoIcon fontSize="small" />
                                                         </IconButton>
                                                     </TableCell>
@@ -573,102 +991,210 @@ const Upload = () => {
                                             page={currentPage}
                                             onChange={handlePageChange}
                                             color="primary"
+                                            sx={{
+                                                '& .MuiPaginationItem-root.Mui-selected': {
+                                                    backgroundColor: GOLD_COLOR,
+                                                    color: 'black'
+                                                }
+                                            }}
                                         />
                                     </Box>
                                 )}
                             </Box>
                         )}
 
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 3 }}>
-                            <Button
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 4 }}>
+                            <SecondaryButton
                                 variant="outlined"
                                 onClick={handleBack}
                                 disabled={loading}
                             >
                                 Voltar
-                            </Button>
-                            <Button
+                            </SecondaryButton>
+                            <PrimaryButton
                                 variant="contained"
                                 onClick={handleNext}
                                 disabled={loading || files.some(f => f.status === 'processing' || f.status === 'pending')}
                             >
                                 Continuar
-                            </Button>
+                            </PrimaryButton>
                         </Box>
                     </Box>
                 )}
 
                 {activeStep === 2 && (
                     <Box>
-                        <Typography variant="h6" gutterBottom>
-                            Resultados do Processamento
-                        </Typography>
+                        <Box sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            mb: 3,
+                            p: 2,
+                            borderRadius: '8px',
+                            bgcolor: alpha(GOLD_COLOR, 0.05)
+                        }}>
+                            <AssessmentIcon sx={{ color: GOLD_COLOR, mr: 2 }} />
+                            <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+                                Resultados do Processamento
+                            </Typography>
+                        </Box>
 
-                        <Box sx={{ mb: 3 }}>
-                            <Grid container spacing={2}>
+                        <Box sx={{ mb: 4 }}>
+                            <Grid container spacing={3}>
                                 <Grid item xs={12} sm={4}>
-                                    <Card>
+                                    <StatsCard>
                                         <CardContent>
-                                            <Typography color="text.secondary" gutterBottom>
+                                            <Typography color="textSecondary" gutterBottom>
                                                 Total de Arquivos
                                             </Typography>
-                                            <Typography variant="h4">
-                                                {files.length}
-                                            </Typography>
+                                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                                <Box
+                                                    sx={{
+                                                        mr: 2,
+                                                        p: 1,
+                                                        borderRadius: '50%',
+                                                        bgcolor: alpha(GOLD_COLOR, 0.1)
+                                                    }}
+                                                >
+                                                    <FilterNoneIcon sx={{ color: GOLD_COLOR }} />
+                                                </Box>
+                                                <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
+                                                    {files.length}
+                                                </Typography>
+                                            </Box>
                                         </CardContent>
-                                    </Card>
+                                    </StatsCard>
                                 </Grid>
                                 <Grid item xs={12} sm={4}>
-                                    <Card>
+                                    <StatsCard>
                                         <CardContent>
-                                            <Typography color="text.secondary" gutterBottom>
+                                            <Typography color="textSecondary" gutterBottom>
                                                 Processados com Sucesso
                                             </Typography>
-                                            <Typography variant="h4" color="success.main">
-                                                {files.filter(f => f.status === 'success').length}
-                                            </Typography>
+                                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                                <Box
+                                                    sx={{
+                                                        mr: 2,
+                                                        p: 1,
+                                                        borderRadius: '50%',
+                                                        bgcolor: alpha('#4caf50', 0.1)
+                                                    }}
+                                                >
+                                                    <CheckCircleIcon sx={{ color: '#4caf50' }} />
+                                                </Box>
+                                                <Typography
+                                                    variant="h4"
+                                                    color="success.main"
+                                                    sx={{ fontWeight: 'bold' }}
+                                                >
+                                                    {files.filter(f => f.status === 'success').length}
+                                                </Typography>
+                                            </Box>
                                         </CardContent>
-                                    </Card>
+                                    </StatsCard>
                                 </Grid>
                                 <Grid item xs={12} sm={4}>
-                                    <Card>
+                                    <StatsCard>
                                         <CardContent>
-                                            <Typography color="text.secondary" gutterBottom>
+                                            <Typography color="textSecondary" gutterBottom>
                                                 Falhas
                                             </Typography>
-                                            <Typography variant="h4" color="error.main">
-                                                {files.filter(f => f.status === 'error').length}
-                                            </Typography>
+                                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                                <Box
+                                                    sx={{
+                                                        mr: 2,
+                                                        p: 1,
+                                                        borderRadius: '50%',
+                                                        bgcolor: alpha('#f44336', 0.1)
+                                                    }}
+                                                >
+                                                    <ErrorIcon sx={{ color: '#f44336' }} />
+                                                </Box>
+                                                <Typography
+                                                    variant="h4"
+                                                    color="error.main"
+                                                    sx={{ fontWeight: 'bold' }}
+                                                >
+                                                    {files.filter(f => f.status === 'error').length}
+                                                </Typography>
+                                            </Box>
                                         </CardContent>
-                                    </Card>
+                                    </StatsCard>
                                 </Grid>
                             </Grid>
                         </Box>
 
-                        <Typography variant="h6" gutterBottom>
+                        <Typography
+                            variant="h6"
+                            gutterBottom
+                            sx={{
+                                fontWeight: 'bold',
+                                display: 'flex',
+                                alignItems: 'center',
+                                mb: 2
+                            }}
+                        >
+                            <PhotoLibraryIcon sx={{ mr: 1, color: GOLD_COLOR }} />
                             Detalhes dos Arquivos
                         </Typography>
 
                         {/* Lista de resultados */}
-                        <List>
+                        <List
+                            sx={{
+                                border: `1px solid ${alpha('#000', 0.1)}`,
+                                borderRadius: '8px',
+                                bgcolor: 'white',
+                                mb: 3
+                            }}
+                        >
                             {paginatedFiles().map((file) => (
-                                <ListItem key={file.id} divider>
+                                <ListItem
+                                    key={file.id}
+                                    divider
+                                    sx={{
+                                        transition: 'all 0.2s ease',
+                                        '&:hover': {
+                                            bgcolor: alpha(GOLD_COLOR, 0.05)
+                                        }
+                                    }}
+                                >
                                     <ListItemIcon>
                                         {file.status === 'success' ? (
-                                            <CheckCircleIcon color="success" />
+                                            <Avatar sx={{ bgcolor: alpha('#4caf50', 0.1), color: '#4caf50' }}>
+                                                <CheckCircleIcon />
+                                            </Avatar>
                                         ) : (
-                                            <ErrorIcon color="error" />
+                                            <Avatar sx={{ bgcolor: alpha('#f44336', 0.1), color: '#f44336' }}>
+                                                <ErrorIcon />
+                                            </Avatar>
                                         )}
                                     </ListItemIcon>
                                     <ListItemText
-                                        primary={file.file.name}
+                                        primary={
+                                            <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
+                                                {file.file.name}
+                                            </Typography>
+                                        }
                                         secondary={
                                             file.status === 'success' ?
-                                                `ID: ${file.result?.person_id} | CPF: ${file.result?.cpf} | Nome: ${file.result?.name}` :
-                                                file.error || 'Erro no processamento'
+                                                <Box component="span" sx={{ color: alpha('#000', 0.7) }}>
+                                                    <b>ID:</b> {file.result?.person_id} | <b>CPF:</b> {file.result?.cpf} | <b>Nome:</b> {file.result?.name}
+                                                </Box> :
+                                                <Box component="span" sx={{ color: 'error.main' }}>
+                                                    {file.error || 'Erro no processamento'}
+                                                </Box>
                                         }
                                     />
-                                    <IconButton size="small" onClick={() => showFileDetails(file)}>
+                                    <IconButton
+                                        size="small"
+                                        onClick={() => showFileDetails(file)}
+                                        sx={{
+                                            bgcolor: alpha(GOLD_COLOR, 0.1),
+                                            color: GOLD_COLOR,
+                                            '&:hover': {
+                                                bgcolor: alpha(GOLD_COLOR, 0.2),
+                                            }
+                                        }}
+                                    >
                                         <InfoIcon />
                                     </IconButton>
                                 </ListItem>
@@ -676,35 +1202,41 @@ const Upload = () => {
                         </List>
 
                         {totalPages > 1 && (
-                            <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
+                            <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2, mb: 3 }}>
                                 <Pagination
                                     count={totalPages}
                                     page={currentPage}
                                     onChange={handlePageChange}
                                     color="primary"
+                                    sx={{
+                                        '& .MuiPaginationItem-root.Mui-selected': {
+                                            backgroundColor: GOLD_COLOR,
+                                            color: 'black'
+                                        }
+                                    }}
                                 />
                             </Box>
                         )}
 
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 3 }}>
-                            <Button
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 4 }}>
+                            <SecondaryButton
                                 variant="outlined"
                                 onClick={handleBack}
                             >
                                 Voltar
-                            </Button>
-                            <Button
+                            </SecondaryButton>
+                            <PrimaryButton
                                 variant="contained"
                                 color="primary"
                                 startIcon={<RefreshIcon />}
                                 onClick={resetUpload}
                             >
                                 Novo Upload
-                            </Button>
+                            </PrimaryButton>
                         </Box>
                     </Box>
                 )}
-            </Paper>
+            </StyledPaper>
 
             {/* Dialog para detalhes do arquivo */}
             <Dialog
@@ -712,13 +1244,26 @@ const Upload = () => {
                 onClose={() => setDetailsOpen(false)}
                 maxWidth="sm"
                 fullWidth
+                PaperProps={{
+                    sx: {
+                        borderRadius: '12px',
+                        overflow: 'hidden'
+                    }
+                }}
             >
-                <DialogTitle>
+                <DialogTitle sx={{
+                    bgcolor: alpha(GOLD_COLOR, 0.05),
+                    borderBottom: `1px solid ${alpha(GOLD_COLOR, 0.2)}`,
+                    fontWeight: 'bold',
+                    display: 'flex',
+                    alignItems: 'center'
+                }}>
+                    <InfoIcon sx={{ mr: 1, color: GOLD_COLOR }} />
                     Detalhes do Arquivo
                 </DialogTitle>
                 <DialogContent dividers>
                     {selectedFile && (
-                        <Grid container spacing={2}>
+                        <Grid container spacing={3}>
                             <Grid item xs={12} sm={6}>
                                 {selectedFile.preview ? (
                                     <Box
@@ -730,8 +1275,9 @@ const Upload = () => {
                                             height: 'auto',
                                             maxHeight: 300,
                                             objectFit: 'contain',
-                                            border: '1px solid #ddd',
-                                            borderRadius: 1,
+                                            border: `1px solid ${alpha('#000', 0.1)}`,
+                                            borderRadius: '8px',
+                                            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
                                         }}
                                     />
                                 ) : (
@@ -742,83 +1288,180 @@ const Upload = () => {
                                             display: 'flex',
                                             alignItems: 'center',
                                             justifyContent: 'center',
-                                            border: '1px solid #ddd',
-                                            borderRadius: 1,
-                                            bgcolor: 'rgba(0, 0, 0, 0.04)'
+                                            border: `1px solid ${alpha('#000', 0.1)}`,
+                                            borderRadius: '8px',
+                                            bgcolor: alpha('#000', 0.05)
                                         }}
                                     >
-                                        <ImageIcon sx={{ fontSize: 80, color: 'text.secondary' }} />
+                                        <ImageIcon sx={{ fontSize: 80, color: alpha('#000', 0.3) }} />
                                     </Box>
                                 )}
                             </Grid>
                             <Grid item xs={12} sm={6}>
-                                <Typography variant="subtitle1" gutterBottom>
+                                <Typography
+                                    variant="subtitle1"
+                                    gutterBottom
+                                    sx={{
+                                        fontWeight: 'bold',
+                                        color: GOLD_COLOR,
+                                        display: 'flex',
+                                        alignItems: 'center'
+                                    }}
+                                >
+                                    <ImageIcon sx={{ mr: 1, fontSize: 20 }} />
                                     Informações do Arquivo
                                 </Typography>
-                                <Typography variant="body2">
-                                    <strong>Nome:</strong> {selectedFile.file.name}
-                                </Typography>
-                                <Typography variant="body2">
-                                    <strong>Tamanho:</strong> {(selectedFile.file.size / 1024).toFixed(1)} KB
-                                </Typography>
-                                <Typography variant="body2">
-                                    <strong>Tipo:</strong> {selectedFile.file.type}
-                                </Typography>
-                                <Typography variant="body2">
-                                    <strong>Status:</strong> {
-                                        selectedFile.status === 'success' ? 'Processado com sucesso' :
-                                            selectedFile.status === 'error' ? 'Erro no processamento' :
-                                                selectedFile.status === 'processing' ? 'Processando...' :
-                                                    'Aguardando processamento'
-                                    }
-                                </Typography>
+                                <Box sx={{ mb: 2 }}>
+                                    <Typography variant="body2" sx={{ mb: 0.5 }}>
+                                        <b>Nome:</b> {selectedFile.file.name}
+                                    </Typography>
+                                    <Typography variant="body2" sx={{ mb: 0.5 }}>
+                                        <b>Tamanho:</b> {(selectedFile.file.size / 1024).toFixed(1)} KB
+                                    </Typography>
+                                    <Typography variant="body2" sx={{ mb: 0.5 }}>
+                                        <b>Tipo:</b> {selectedFile.file.type}
+                                    </Typography>
+                                    <Typography variant="body2" sx={{ mb: 0.5 }}>
+                                        <b>Status:</b>{' '}
+                                        {selectedFile.status === 'success' ? (
+                                            <Chip
+                                                size="small"
+                                                label="Processado com sucesso"
+                                                color="success"
+                                                sx={{ fontWeight: 'bold' }}
+                                            />
+                                        ) : selectedFile.status === 'error' ? (
+                                            <Chip
+                                                size="small"
+                                                label="Erro no processamento"
+                                                color="error"
+                                                sx={{ fontWeight: 'bold' }}
+                                            />
+                                        ) : selectedFile.status === 'processing' ? (
+                                            <Chip
+                                                size="small"
+                                                label="Processando..."
+                                                color="primary"
+                                                sx={{ fontWeight: 'bold' }}
+                                            />
+                                        ) : (
+                                            <Chip
+                                                size="small"
+                                                label="Aguardando processamento"
+                                                color="default"
+                                                sx={{ fontWeight: 'bold' }}
+                                            />
+                                        )}
+                                    </Typography>
+                                </Box>
 
                                 {selectedFile.status === 'success' && selectedFile.result && (
                                     <>
-                                        <Divider sx={{ my: 2 }} />
-                                        <Typography variant="subtitle1" gutterBottom>
+                                        <StyledDivider />
+                                        <Typography
+                                            variant="subtitle1"
+                                            gutterBottom
+                                            sx={{
+                                                fontWeight: 'bold',
+                                                color: GOLD_COLOR,
+                                                display: 'flex',
+                                                alignItems: 'center'
+                                            }}
+                                        >
+                                            <PersonIcon sx={{ mr: 1, fontSize: 20 }} />
                                             Resultado do Processamento
                                         </Typography>
-                                        <Typography variant="body2">
-                                            <strong>ID da Pessoa:</strong> {selectedFile.result.person_id}
-                                        </Typography>
-                                        <Typography variant="body2">
-                                            <strong>CPF:</strong> {selectedFile.result.cpf}
-                                        </Typography>
-                                        <Typography variant="body2">
-                                            <strong>Nome:</strong> {selectedFile.result.name}
-                                        </Typography>
-                                        <Typography variant="body2">
-                                            <strong>Origem:</strong> {selectedFile.result.origin}
-                                        </Typography>
-                                        <Typography variant="body2">
-                                            <strong>Face Detectada:</strong> {selectedFile.result.face_detected ? 'Sim' : 'Não'}
-                                        </Typography>
+                                        <Box
+                                            sx={{
+                                                p: 2,
+                                                backgroundColor: alpha('#f5f5f5', 0.5),
+                                                borderRadius: '8px',
+                                                border: `1px solid ${alpha('#000', 0.1)}`
+                                            }}
+                                        >
+                                            <Typography variant="body2" sx={{ mb: 0.5 }}>
+                                                <b>ID da Pessoa:</b> {selectedFile.result.person_id}
+                                            </Typography>
+                                            <Typography variant="body2" sx={{ mb: 0.5 }}>
+                                                <b>CPF:</b> {selectedFile.result.cpf}
+                                            </Typography>
+                                            <Typography variant="body2" sx={{ mb: 0.5 }}>
+                                                <b>Nome:</b> {selectedFile.result.name}
+                                            </Typography>
+                                            <Typography variant="body2" sx={{ mb: 0.5 }}>
+                                                <b>Origem:</b> {selectedFile.result.origin}
+                                            </Typography>
+                                            <Typography variant="body2">
+                                                <b>Face Detectada:</b>{' '}
+                                                {selectedFile.result.face_detected ? (
+                                                    <Chip
+                                                        size="small"
+                                                        label="Sim"
+                                                        color="success"
+                                                        sx={{ fontWeight: 'bold' }}
+                                                    />
+                                                ) : (
+                                                    <Chip
+                                                        size="small"
+                                                        label="Não"
+                                                        color="error"
+                                                        sx={{ fontWeight: 'bold' }}
+                                                    />
+                                                )}
+                                            </Typography>
+                                        </Box>
                                     </>
                                 )}
 
                                 {selectedFile.status === 'error' && (
                                     <>
-                                        <Divider sx={{ my: 2 }} />
-                                        <Typography variant="subtitle1" color="error" gutterBottom>
+                                        <StyledDivider />
+                                        <Typography
+                                            variant="subtitle1"
+                                            color="error"
+                                            gutterBottom
+                                            sx={{
+                                                fontWeight: 'bold',
+                                                display: 'flex',
+                                                alignItems: 'center'
+                                            }}
+                                        >
+                                            <ErrorIcon sx={{ mr: 1, fontSize: 20 }} />
                                             Erro
                                         </Typography>
-                                        <Typography variant="body2">
+                                        <Alert
+                                            severity="error"
+                                            variant="outlined"
+                                            sx={{ mt: 1 }}
+                                        >
                                             {selectedFile.error || 'Erro desconhecido durante o processamento.'}
-                                        </Typography>
+                                        </Alert>
                                     </>
                                 )}
                             </Grid>
                         </Grid>
                     )}
                 </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => setDetailsOpen(false)}>
+                <DialogActions sx={{ p: 2, bgcolor: alpha(GOLD_COLOR, 0.02) }}>
+                    <Button
+                        onClick={() => setDetailsOpen(false)}
+                        sx={{
+                            borderRadius: '8px',
+                            fontWeight: 'bold',
+                            borderColor: GOLD_COLOR,
+                            color: GOLD_COLOR,
+                            '&:hover': {
+                                borderColor: GOLD_COLOR,
+                                backgroundColor: alpha(GOLD_COLOR, 0.1)
+                            }
+                        }}
+                        variant="outlined"
+                    >
                         Fechar
                     </Button>
                 </DialogActions>
             </Dialog>
-        </Box>
+        </Container>
     );
 };
 
