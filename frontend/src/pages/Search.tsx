@@ -1,5 +1,4 @@
 import { useState } from 'react';
-
 import {
     Box,
     Typography,
@@ -22,7 +21,9 @@ import {
     DialogTitle,
     DialogContent,
     DialogActions,
-    IconButton
+    IconButton,
+    useMediaQuery,
+    useTheme
 } from '@mui/material';
 import {
     Search as SearchIcon,
@@ -32,17 +33,15 @@ import {
     ArrowForwardIos as ArrowForwardIcon
 } from '@mui/icons-material';
 import { searchByImage, searchByPersonId, SearchResult } from '../services/recognitionService';
-
-// Adicione as novas funções de busca ao import
 import {
     searchByPersonCpf,
     searchByPersonName
 } from '../services/recognitionService';
-
-// Importe a nova função getPersonImages
 import { getPersonImages, PersonImage } from '../services/personService';
 
 const Search = () => {
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('md'));
     const [searchMethod, setSearchMethod] = useState(0);
     const [personId, setPersonId] = useState('');
     const [personCpf, setPersonCpf] = useState('');
@@ -55,21 +54,14 @@ const Search = () => {
     const [success, setSuccess] = useState(false);
     const [detailsOpen, setDetailsOpen] = useState(false);
     const [selectedResult, setSelectedResult] = useState<SearchResult | null>(null);
-
-    // Novo estado para armazenar as imagens da pessoa
     const [personImages, setPersonImages] = useState<PersonImage[]>([]);
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const [loadingImages, setLoadingImages] = useState(false);
 
     // Função para formatar CPF
     const formatCPF = (value: string) => {
-        // Remove caracteres não numéricos
         const cpf = value.replace(/\D/g, '');
-
-        // Limita a 11 dígitos
         const cpfLimited = cpf.slice(0, 11);
-
-        // Adiciona a formatação
         if (cpfLimited.length <= 3) {
             return cpfLimited;
         } else if (cpfLimited.length <= 6) {
@@ -88,7 +80,6 @@ const Search = () => {
 
     // Handlers para os campos de entrada
     const handleRgChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        // Limita a 11 caracteres
         setPersonId(e.target.value.slice(0, 11));
     };
 
@@ -120,8 +111,6 @@ const Search = () => {
         if (event.target.files && event.target.files[0]) {
             const selectedFile = event.target.files[0];
             setFile(selectedFile);
-
-            // Criar URL para preview
             const fileUrl = URL.createObjectURL(selectedFile);
             setPreviewUrl(fileUrl);
         }
@@ -240,7 +229,6 @@ const Search = () => {
                             // Definimos similaridade como 1.0 (100%) para resultados por nome
                             nameMatches.forEach(match => match.similarity = 1.0);
 
-                            // ALTERAÇÃO 4: Agrupar resultados por nome
                             // Agrupar resultados por person_id, mantendo apenas um resultado por pessoa
                             const groupedResults: { [key: string]: SearchResult } = {};
 
@@ -269,7 +257,6 @@ const Search = () => {
 
             if (response.success) {
                 if (response.results.length > 0) {
-                    // ALTERAÇÃO 1: Corrigir mensagem de sucesso
                     setSuccess(true);
                 } else {
                     setError('Nenhum resultado encontrado para sua busca.');
@@ -338,7 +325,7 @@ const Search = () => {
 
     // Função para verificar se deve mostrar a similaridade com base no método de busca
     const shouldShowSimilarity = (method: number) => {
-        // ALTERAÇÃO 3: Mostrar similaridade apenas para busca por imagem (método 0)
+        // Mostrar similaridade apenas para busca por imagem (método 0)
         return method === 0;
     };
 
@@ -348,14 +335,25 @@ const Search = () => {
                 Busca de Faces
             </Typography>
 
-            <Paper elevation={3} sx={{ p: 3, mb: 3 }}>
+            <Paper elevation={3} sx={{
+                p: { xs: 2, md: 3 },
+                mb: 3
+            }}>
                 <Tabs
                     value={searchMethod}
                     onChange={handleTabChange}
                     indicatorColor="primary"
                     textColor="primary"
-                    centered
-                    sx={{ mb: 3 }}
+                    variant={isMobile ? "scrollable" : "standard"}
+                    scrollButtons={isMobile}
+                    allowScrollButtonsMobile
+                    centered={!isMobile}
+                    sx={{
+                        mb: 3,
+                        '& .MuiTabs-scrollButtons': {
+                            color: 'primary.main'
+                        }
+                    }}
                 >
                     <Tab icon={<UploadIcon />} label="Buscar por Imagem" />
                     <Tab icon={<PersonIcon />} label="Buscar por RG" />
@@ -369,8 +367,8 @@ const Search = () => {
                             Faça upload de uma imagem para buscar faces similares no sistema.
                         </Typography>
 
-                        <Grid container spacing={3} alignItems="center">
-                            <Grid item xs={12} md={6}>
+                        <Grid container spacing={2} alignItems="center">
+                            <Grid item xs={12} sm={6}>
                                 <Button
                                     variant="contained"
                                     component="label"
@@ -387,13 +385,13 @@ const Search = () => {
                                     />
                                 </Button>
                                 {file && (
-                                    <Typography variant="body2" sx={{ mt: 1 }}>
-                                        Arquivo selecionado: {file.name}
+                                    <Typography variant="body2" sx={{ mt: 1, textAlign: 'center' }}>
+                                        {file.name}
                                     </Typography>
                                 )}
                             </Grid>
 
-                            <Grid item xs={12} md={6}>
+                            <Grid item xs={12} sm={6}>
                                 <Button
                                     variant="contained"
                                     color="primary"
@@ -406,27 +404,29 @@ const Search = () => {
                                     {loading ? 'Buscando...' : 'Buscar Faces Similares'}
                                 </Button>
                             </Grid>
-
-                            {previewUrl && (
-                                <Grid item xs={12} md={6}>
-                                    <Typography variant="subtitle1" gutterBottom>
-                                        Preview da Imagem:
-                                    </Typography>
-                                    <Box
-                                        component="img"
-                                        src={previewUrl}
-                                        alt="Preview"
-                                        sx={{
-                                            maxWidth: '100%',
-                                            maxHeight: 300,
-                                            objectFit: 'contain',
-                                            border: '1px solid #ddd',
-                                            borderRadius: 1,
-                                        }}
-                                    />
-                                </Grid>
-                            )}
                         </Grid>
+
+                        {/* Preview da imagem */}
+                        {previewUrl && (
+                            <Box sx={{
+                                mt: 2,
+                                display: 'flex',
+                                justifyContent: 'center'
+                            }}>
+                                <Box
+                                    component="img"
+                                    src={previewUrl}
+                                    alt="Preview"
+                                    sx={{
+                                        maxWidth: '100%',
+                                        maxHeight: 300,
+                                        objectFit: 'contain',
+                                        border: '1px solid #ddd',
+                                        borderRadius: 1,
+                                    }}
+                                />
+                            </Box>
+                        )}
                     </Box>
                 ) : searchMethod === 1 ? (
                     <Box>
@@ -434,8 +434,8 @@ const Search = () => {
                             Digite o RG da pessoa para buscar faces similares no sistema.
                         </Typography>
 
-                        <Grid container spacing={3} alignItems="center">
-                            <Grid item xs={12} md={6}>
+                        <Grid container spacing={2} alignItems="center">
+                            <Grid item xs={12} sm={6}>
                                 <TextField
                                     label="RG da Pessoa"
                                     variant="outlined"
@@ -448,7 +448,7 @@ const Search = () => {
                                 />
                             </Grid>
 
-                            <Grid item xs={12} md={6}>
+                            <Grid item xs={12} sm={6}>
                                 <Button
                                     variant="contained"
                                     color="primary"
@@ -469,8 +469,8 @@ const Search = () => {
                             Digite o CPF da pessoa para buscar faces similares no sistema.
                         </Typography>
 
-                        <Grid container spacing={3} alignItems="center">
-                            <Grid item xs={12} md={6}>
+                        <Grid container spacing={2} alignItems="center">
+                            <Grid item xs={12} sm={6}>
                                 <TextField
                                     label="CPF da Pessoa"
                                     variant="outlined"
@@ -482,7 +482,7 @@ const Search = () => {
                                 />
                             </Grid>
 
-                            <Grid item xs={12} md={6}>
+                            <Grid item xs={12} sm={6}>
                                 <Button
                                     variant="contained"
                                     color="primary"
@@ -503,8 +503,8 @@ const Search = () => {
                             Digite o nome da pessoa para buscar faces similares no sistema.
                         </Typography>
 
-                        <Grid container spacing={3} alignItems="center">
-                            <Grid item xs={12} md={6}>
+                        <Grid container spacing={2} alignItems="center">
+                            <Grid item xs={12} sm={6}>
                                 <TextField
                                     label="Nome da Pessoa"
                                     variant="outlined"
@@ -516,7 +516,7 @@ const Search = () => {
                                 />
                             </Grid>
 
-                            <Grid item xs={12} md={6}>
+                            <Grid item xs={12} sm={6}>
                                 <Button
                                     variant="contained"
                                     color="primary"
@@ -564,7 +564,7 @@ const Search = () => {
                         Resultados da Busca
                     </Typography>
 
-                    <Grid container spacing={3}>
+                    <Grid container spacing={2}>
                         {results.map((result, index) => (
                             <Grid item xs={12} sm={6} md={4} key={index}>
                                 <Card elevation={3}>
@@ -631,7 +631,6 @@ const Search = () => {
                                         >
                                             Ver Detalhes
                                         </Button>
-                                        {/* ALTERAÇÃO 2: Botão "Comparar" removido */}
                                     </CardActions>
                                 </Card>
                             </Grid>
@@ -735,7 +734,6 @@ const Search = () => {
                                     <strong>Origem:</strong> {selectedResult.origin}
                                 </Typography>
 
-                                {/* ALTERAÇÃO 3: Mostrar similaridade apenas para busca por imagem */}
                                 {shouldShowSimilarity(searchMethod) && (
                                     <Typography variant="body1">
                                         <strong>Similaridade:</strong> {(selectedResult.similarity * 100).toFixed(1)}%
@@ -748,7 +746,6 @@ const Search = () => {
                                     </Typography>
                                 )}
 
-                                {/* ALTERAÇÃO 3: Mostrar barra de similaridade apenas para busca por imagem */}
                                 {shouldShowSimilarity(searchMethod) && (
                                     <Box sx={{ mt: 2, display: 'flex', alignItems: 'center' }}>
                                         <Typography variant="body2" sx={{ mr: 1 }}>
