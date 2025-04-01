@@ -217,7 +217,7 @@ const Sidebar = ({ open }: SidebarProps) => {
                         textAlign: 'center'
                     }}>
                         <Typography variant="caption" sx={{ color: alpha('#fff', 0.6) }}>
-                            © 2025 Sistema de Identificação Facial
+                            © 2025 SIF
                         </Typography>
                     </Box>
                 </>
