@@ -125,7 +125,11 @@ const theme = createTheme({
 });
 
 function App() {
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(() => {
+    // Verifica se é um dispositivo móvel e inicia com o menu fechado
+    const isMobile = window.innerWidth <= 960; // breakpoint padrão do Material-UI para md
+    return !isMobile;
+  });
 
   const toggleDrawer = () => {
     setOpen(!open);
@@ -144,7 +148,16 @@ function App() {
                 <ProtectedRoute>
                   <>
                     <Header open={open} toggleDrawer={toggleDrawer} />
-                    <Sidebar open={open} />
+                    <Box
+                      sx={{
+                        display: {
+                          xs: 'none',  // Esconde em dispositivos móveis 
+                          md: 'block'  // Mostra em dispositivos maiores 
+                        }
+                      }}
+                    >
+                      <Sidebar open={open} />
+                    </Box>
                     <Box
                       component="main"
                       sx={{
@@ -171,7 +184,16 @@ function App() {
                 <RoleProtectedRoute allowedRoles={['administrador']}>
                   <>
                     <Header open={open} toggleDrawer={toggleDrawer} />
-                    <Sidebar open={open} />
+                    <Box
+                      sx={{
+                        display: {
+                          xs: 'none',  // Esconde em dispositivos móveis 
+                          md: 'block'  // Mostra em dispositivos maiores 
+                        }
+                      }}
+                    >
+                      <Sidebar open={open} />
+                    </Box>
                     <Box
                       component="main"
                       sx={{
@@ -198,7 +220,16 @@ function App() {
                 <RoleProtectedRoute allowedRoles={['administrador', 'cadastrador']}>
                   <>
                     <Header open={open} toggleDrawer={toggleDrawer} />
-                    <Sidebar open={open} />
+                    <Box
+                      sx={{
+                        display: {
+                          xs: 'none',  // Esconde em dispositivos móveis 
+                          md: 'block'  // Mostra em dispositivos maiores 
+                        }
+                      }}
+                    >
+                      <Sidebar open={open} />
+                    </Box>
                     <Box
                       component="main"
                       sx={{
@@ -225,7 +256,16 @@ function App() {
                 <RoleProtectedRoute allowedRoles={['administrador', 'consultor', 'cadastrador']}>
                   <>
                     <Header open={open} toggleDrawer={toggleDrawer} />
-                    <Sidebar open={open} />
+                    <Box
+                      sx={{
+                        display: {
+                          xs: 'none',  // Esconde em dispositivos móveis 
+                          md: 'block'  // Mostra em dispositivos maiores 
+                        }
+                      }}
+                    >
+                      <Sidebar open={open} />
+                    </Box>
                     <Box
                       component="main"
                       sx={{
@@ -252,7 +292,16 @@ function App() {
                 <RoleProtectedRoute allowedRoles={['administrador']}>
                   <>
                     <Header open={open} toggleDrawer={toggleDrawer} />
-                    <Sidebar open={open} />
+                    <Box
+                      sx={{
+                        display: {
+                          xs: 'none',  // Esconde em dispositivos móveis 
+                          md: 'block'  // Mostra em dispositivos maiores 
+                        }
+                      }}
+                    >
+                      <Sidebar open={open} />
+                    </Box>
                     <Box
                       component="main"
                       sx={{
@@ -279,7 +328,16 @@ function App() {
                 <RoleProtectedRoute allowedRoles={['administrador']}>
                   <>
                     <Header open={open} toggleDrawer={toggleDrawer} />
-                    <Sidebar open={open} />
+                    <Box
+                      sx={{
+                        display: {
+                          xs: 'none',  // Esconde em dispositivos móveis 
+                          md: 'block'  // Mostra em dispositivos maiores 
+                        }
+                      }}
+                    >
+                      <Sidebar open={open} />
+                    </Box>
                     <Box
                       component="main"
                       sx={{
@@ -306,7 +364,16 @@ function App() {
                 <RoleProtectedRoute allowedRoles={['administrador']}>
                   <>
                     <Header open={open} toggleDrawer={toggleDrawer} />
-                    <Sidebar open={open} />
+                    <Box
+                      sx={{
+                        display: {
+                          xs: 'none',  // Esconde em dispositivos móveis 
+                          md: 'block'  // Mostra em dispositivos maiores 
+                        }
+                      }}
+                    >
+                      <Sidebar open={open} />
+                    </Box>
                     <Box
                       component="main"
                       sx={{
@@ -333,7 +400,16 @@ function App() {
                 <RoleProtectedRoute allowedRoles={['administrador', 'consultor', 'cadastrador']}>
                   <>
                     <Header open={open} toggleDrawer={toggleDrawer} />
-                    <Sidebar open={open} />
+                    <Box
+                      sx={{
+                        display: {
+                          xs: 'none',  // Esconde em dispositivos móveis 
+                          md: 'block'  // Mostra em dispositivos maiores 
+                        }
+                      }}
+                    >
+                      <Sidebar open={open} />
+                    </Box>
                     <Box
                       component="main"
                       sx={{

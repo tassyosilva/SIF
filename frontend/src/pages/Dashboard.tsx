@@ -1,12 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import {
     Box, Typography, Grid, Paper,
-    Card, CardContent, CircularProgress, Alert
+    Card, CardContent, CircularProgress, Alert,
+    useMediaQuery,
+    useTheme
 } from '@mui/material';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from 'recharts';
 import { getPersons } from '../services/personService';
 
 const Dashboard: React.FC = () => {
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+
     const [loading, setLoading] = useState(true);
     const [totalPersons, setTotalPersons] = useState(0);
     const [originStats, setOriginStats] = useState<{ name: string; value: number }[]>([]);
@@ -45,8 +50,173 @@ const Dashboard: React.FC = () => {
     // Cores da Polícia Civil com bom contraste
     const COLORS = ['#D4AF37', '#000000', '#8B7D39', '#4C4C4C', '#333333'];
 
-    return (
+    // Renderização condicional para mobile
+    const renderMobileView = () => (
         <Box sx={{ width: '100%' }}>
+            <Grid container spacing={2}>
+                {/* Total de Pessoas */}
+                <Grid item xs={12}>
+                    <Paper elevation={3} sx={{ p: 2, textAlign: 'center', borderTop: '3px solid #D4AF37' }}>
+                        <Typography variant="h6" component="div" sx={{ color: '#000000', mb: 1 }}>
+                            Total de Pessoas
+                        </Typography>
+                        <Typography variant="h4" component="div" sx={{ color: '#000000', fontWeight: 'bold' }}>
+                            {totalPersons}
+                        </Typography>
+                    </Paper>
+                </Grid>
+
+                {/* Distribuição por Origem (Pie Chart) */}
+                <Grid item xs={12}>
+                    <Paper elevation={3} sx={{ p: 2, borderTop: '3px solid #D4AF37' }}>
+                        <Typography variant="h6" gutterBottom sx={{ color: '#000000', textAlign: 'center' }}>
+                            Distribuição por Origem
+                        </Typography>
+                        {originStats.length > 0 ? (
+                            <Box sx={{ width: '100%', height: 300 }}>
+                                <ResponsiveContainer>
+                                    <PieChart>
+                                        <Pie
+                                            data={originStats}
+                                            cx="50%"
+                                            cy="50%"
+                                            labelLine={false}
+                                            outerRadius={100}
+                                            fill="#8884d8"
+                                            dataKey="value"
+                                            label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                                        >
+                                            {originStats.map((entry, index) => (
+                                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                            ))}
+                                        </Pie>
+                                        <Tooltip formatter={(value) => [`${value} pessoas`, 'Quantidade']} />
+                                    </PieChart>
+                                </ResponsiveContainer>
+                            </Box>
+                        ) : (
+                            <Typography>Sem dados disponíveis</Typography>
+                        )}
+                    </Paper>
+                </Grid>
+
+                {/* Pessoas por Origem (Bar Chart) */}
+                <Grid item xs={12}>
+                    <Paper elevation={3} sx={{ p: 2, borderTop: '3px solid #D4AF37' }}>
+                        <Typography variant="h6" gutterBottom sx={{ color: '#000000', textAlign: 'center' }}>
+                            Pessoas por Origem
+                        </Typography>
+                        {originStats.length > 0 ? (
+                            <Box sx={{ width: '100%', height: 300 }}>
+                                <ResponsiveContainer>
+                                    <BarChart
+                                        data={originStats}
+                                        margin={{
+                                            top: 5,
+                                            right: 10,
+                                            left: 10,
+                                            bottom: 5,
+                                        }}
+                                    >
+                                        <XAxis dataKey="name" />
+                                        <YAxis />
+                                        <Tooltip />
+                                        <Bar dataKey="value" name="Quantidade" fill="#000000" />
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </Box>
+                        ) : (
+                            <Typography>Sem dados disponíveis</Typography>
+                        )}
+                    </Paper>
+                </Grid>
+            </Grid>
+        </Box>
+    );
+
+    const renderDesktopView = () => (
+        <Box sx={{ width: '100%' }}>
+            <Grid container spacing={3}>
+                <Grid item xs={12} md={4}>
+                    <Paper elevation={3} sx={{ p: 2, height: '100%', borderTop: '3px solid #D4AF37' }}>
+                        <Card sx={{ boxShadow: 'none' }}>
+                            <CardContent>
+                                <Typography variant="h5" component="div" sx={{ color: '#000000' }}>
+                                    Total de Pessoas
+                                </Typography>
+                                <Typography variant="h3" component="div" sx={{ mt: 2, color: '#000000', fontWeight: 'bold' }}>
+                                    {totalPersons}
+                                </Typography>
+                            </CardContent>
+                        </Card>
+                    </Paper>
+                </Grid>
+
+                <Grid item xs={12} md={8}>
+                    <Paper elevation={3} sx={{ p: 2, height: '100%', borderTop: '3px solid #D4AF37' }}>
+                        <Typography variant="h6" gutterBottom sx={{ color: '#000000' }}>
+                            Distribuição por Origem
+                        </Typography>
+                        {originStats.length > 0 ? (
+                            <ResponsiveContainer width="100%" height={300}>
+                                <PieChart>
+                                    <Pie
+                                        data={originStats}
+                                        cx="50%"
+                                        cy="50%"
+                                        labelLine={true}
+                                        label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                                        outerRadius={100}
+                                        fill="#8884d8"
+                                        dataKey="value"
+                                    >
+                                        {originStats.map((entry, index) => (
+                                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                        ))}
+                                    </Pie>
+                                    <Tooltip formatter={(value) => [`${value} pessoas`, 'Quantidade']} />
+                                </PieChart>
+                            </ResponsiveContainer>
+                        ) : (
+                            <Typography>Sem dados disponíveis</Typography>
+                        )}
+                    </Paper>
+                </Grid>
+
+                <Grid item xs={12}>
+                    <Paper elevation={3} sx={{ p: 2, borderTop: '3px solid #D4AF37' }}>
+                        <Typography variant="h6" gutterBottom sx={{ color: '#000000' }}>
+                            Pessoas por Origem
+                        </Typography>
+                        {originStats.length > 0 ? (
+                            <ResponsiveContainer width="100%" height={300}>
+                                <BarChart
+                                    data={originStats}
+                                    margin={{
+                                        top: 5,
+                                        right: 30,
+                                        left: 20,
+                                        bottom: 5,
+                                    }}
+                                >
+                                    <XAxis dataKey="name" />
+                                    <YAxis />
+                                    <Tooltip />
+                                    <Legend />
+                                    <Bar dataKey="value" name="Quantidade" fill="#000000" />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        ) : (
+                            <Typography>Sem dados disponíveis</Typography>
+                        )}
+                    </Paper>
+                </Grid>
+            </Grid>
+        </Box>
+    );
+
+    return (
+        <Box>
             <Typography variant="h4" component="h1" gutterBottom sx={{ color: '#000000' }}>
                 Dashboard
             </Typography>
@@ -58,84 +228,7 @@ const Dashboard: React.FC = () => {
             ) : error ? (
                 <Alert severity="error">{error}</Alert>
             ) : (
-                <>
-                    <Grid container spacing={3}>
-                        <Grid item xs={12} md={4}>
-                            <Paper elevation={3} sx={{ p: 2, height: '100%', borderTop: '3px solid #D4AF37' }}>
-                                <Card sx={{ boxShadow: 'none' }}>
-                                    <CardContent>
-                                        <Typography variant="h5" component="div" sx={{ color: '#000000' }}>
-                                            Total de Pessoas
-                                        </Typography>
-                                        <Typography variant="h3" component="div" sx={{ mt: 2, color: '#000000', fontWeight: 'bold' }}>
-                                            {totalPersons}
-                                        </Typography>
-                                    </CardContent>
-                                </Card>
-                            </Paper>
-                        </Grid>
-
-                        <Grid item xs={12} md={8}>
-                            <Paper elevation={3} sx={{ p: 2, height: '100%', borderTop: '3px solid #D4AF37' }}>
-                                <Typography variant="h6" gutterBottom sx={{ color: '#000000' }}>
-                                    Distribuição por Origem
-                                </Typography>
-                                {originStats.length > 0 ? (
-                                    <ResponsiveContainer width="100%" height={300}>
-                                        <PieChart>
-                                            <Pie
-                                                data={originStats}
-                                                cx="50%"
-                                                cy="50%"
-                                                labelLine={true}
-                                                label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                                                outerRadius={100}
-                                                fill="#8884d8"
-                                                dataKey="value"
-                                            >
-                                                {originStats.map((entry, index) => (
-                                                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                                ))}
-                                            </Pie>
-                                            <Tooltip formatter={(value) => [`${value} pessoas`, 'Quantidade']} />
-                                        </PieChart>
-                                    </ResponsiveContainer>
-                                ) : (
-                                    <Typography>Sem dados disponíveis</Typography>
-                                )}
-                            </Paper>
-                        </Grid>
-
-                        <Grid item xs={12}>
-                            <Paper elevation={3} sx={{ p: 2, borderTop: '3px solid #D4AF37' }}>
-                                <Typography variant="h6" gutterBottom sx={{ color: '#000000' }}>
-                                    Pessoas por Origem
-                                </Typography>
-                                {originStats.length > 0 ? (
-                                    <ResponsiveContainer width="100%" height={300}>
-                                        <BarChart
-                                            data={originStats}
-                                            margin={{
-                                                top: 5,
-                                                right: 30,
-                                                left: 20,
-                                                bottom: 5,
-                                            }}
-                                        >
-                                            <XAxis dataKey="name" />
-                                            <YAxis />
-                                            <Tooltip />
-                                            <Legend />
-                                            <Bar dataKey="value" name="Quantidade" fill="#000000" />
-                                        </BarChart>
-                                    </ResponsiveContainer>
-                                ) : (
-                                    <Typography>Sem dados disponíveis</Typography>
-                                )}
-                            </Paper>
-                        </Grid>
-                    </Grid>
-                </>
+                isMobile ? renderMobileView() : renderDesktopView()
             )}
         </Box>
     );
