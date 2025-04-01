@@ -1,4 +1,5 @@
 import { useState } from 'react';
+
 import {
     Box,
     Typography,
@@ -39,6 +40,7 @@ import {
 } from '../services/recognitionService';
 import { getPersonImages, PersonImage } from '../services/personService';
 
+
 const Search = () => {
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('md'));
@@ -58,6 +60,7 @@ const Search = () => {
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const [loadingImages, setLoadingImages] = useState(false);
 
+
     // Função para formatar CPF
     const formatCPF = (value: string) => {
         const cpf = value.replace(/\D/g, '');
@@ -73,28 +76,34 @@ const Search = () => {
         }
     };
 
+
     // Função para remover acentos
     const removeAccents = (str: string) => {
         return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
     };
+
 
     // Handlers para os campos de entrada
     const handleRgChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setPersonId(e.target.value.slice(0, 11));
     };
 
+
     const handleCpfChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setPersonCpf(formatCPF(e.target.value));
     };
+
 
     const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setPersonName(removeAccents(e.target.value));
     };
 
+
     const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
         setSearchMethod(newValue);
         resetSearch();
     };
+
 
     const resetSearch = () => {
         setPersonId('');
@@ -107,6 +116,7 @@ const Search = () => {
         setSuccess(false);
     };
 
+
     const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         if (event.target.files && event.target.files[0]) {
             const selectedFile = event.target.files[0];
@@ -116,6 +126,7 @@ const Search = () => {
         }
     };
 
+
     const handleSearch = async () => {
         try {
             setLoading(true);
@@ -123,7 +134,9 @@ const Search = () => {
             setSuccess(false);
             setResults([]);
 
+
             let response;
+
 
             switch (searchMethod) {
                 case 0: // Busca por imagem
@@ -134,10 +147,12 @@ const Search = () => {
                     }
                     response = await searchByImage(file, 5);
 
+
                     // Para busca por imagem, mantemos o comportamento atual
                     if (response.success) {
                         // Agrupar resultados por person_id, mantendo apenas o resultado com maior similaridade
                         const groupedResults: { [key: string]: SearchResult } = {};
+
 
                         response.results.forEach(result => {
                             if (!groupedResults[result.person_id] ||
@@ -146,14 +161,17 @@ const Search = () => {
                             }
                         });
 
+
                         // Converter de volta para array e ordenar por similaridade
                         const uniqueResults = Object.values(groupedResults).sort(
                             (a, b) => b.similarity - a.similarity
                         );
 
+
                         setResults(uniqueResults);
                     }
                     break;
+
 
                 case 1: // Busca por RG
                     if (!personId) {
@@ -163,12 +181,14 @@ const Search = () => {
                     }
                     response = await searchByPersonId(personId, 1); // Limitamos a 1 resultado
 
+
                     // Para busca por RG, queremos apenas o resultado exato
                     if (response.success && response.results.length > 0) {
                         // Filtramos apenas o resultado com RG exato
                         const exactMatches = response.results.filter(
                             result => result.person_id === personId
                         );
+
 
                         // Se não houver correspondências exatas, mostramos uma mensagem
                         if (exactMatches.length === 0) {
@@ -181,6 +201,7 @@ const Search = () => {
                     }
                     break;
 
+
                 case 2: // Busca por CPF
                     if (!personCpf) {
                         setError('Por favor, digite um CPF válido.');
@@ -189,12 +210,14 @@ const Search = () => {
                     }
                     response = await searchByPersonCpf(personCpf, 1); // Limitamos a 1 resultado
 
+
                     // Para busca por CPF, queremos apenas o resultado exato
                     if (response.success && response.results.length > 0) {
                         // Filtramos apenas o resultado com CPF exato (considerando formatação)
                         const exactMatches = response.results.filter(
                             result => result.cpf === personCpf
                         );
+
 
                         // Se não houver correspondências exatas, mostramos uma mensagem
                         if (exactMatches.length === 0) {
@@ -207,6 +230,7 @@ const Search = () => {
                     }
                     break;
 
+
                 case 3: // Busca por Nome
                     if (!personName) {
                         setError('Por favor, digite um nome para busca.');
@@ -215,12 +239,14 @@ const Search = () => {
                     }
                     response = await searchByPersonName(personName, 5);
 
+
                     // Para busca por nome, filtramos resultados para incluir apenas aqueles
                     // que contêm o termo de pesquisa no nome
                     if (response.success && response.results.length > 0) {
                         const nameMatches = response.results.filter(
                             result => result.person_name.toLowerCase().includes(personName.toLowerCase())
                         );
+
 
                         // Se não houver correspondências, mostramos uma mensagem
                         if (nameMatches.length === 0) {
@@ -229,8 +255,10 @@ const Search = () => {
                             // Definimos similaridade como 1.0 (100%) para resultados por nome
                             nameMatches.forEach(match => match.similarity = 1.0);
 
+
                             // Agrupar resultados por person_id, mantendo apenas um resultado por pessoa
                             const groupedResults: { [key: string]: SearchResult } = {};
+
 
                             nameMatches.forEach(result => {
                                 if (!groupedResults[result.person_id]) {
@@ -238,13 +266,16 @@ const Search = () => {
                                 }
                             });
 
+
                             // Converter de volta para array
                             const uniqueResults = Object.values(groupedResults);
+
 
                             setResults(uniqueResults);
                         }
                     }
                     break;
+
 
                 default:
                     setError('Método de busca inválido.');
@@ -252,8 +283,10 @@ const Search = () => {
                     return;
             }
 
+
             console.log("API Response:", response);
             console.log("Results:", response.results);
+
 
             if (response.success) {
                 if (response.results.length > 0) {
@@ -289,6 +322,7 @@ const Search = () => {
         }
     };
 
+
     // Nova função para carregar todas as imagens de uma pessoa
     const loadPersonImages = async (personId: string) => {
         try {
@@ -304,6 +338,7 @@ const Search = () => {
         }
     };
 
+
     const handleOpenDetails = (result: SearchResult) => {
         setSelectedResult(result);
         setDetailsOpen(true);
@@ -311,11 +346,13 @@ const Search = () => {
         loadPersonImages(result.person_id);
     };
 
+
     const handleNextImage = () => {
         if (currentImageIndex < personImages.length - 1) {
             setCurrentImageIndex(prev => prev + 1);
         }
     };
+
 
     const handlePrevImage = () => {
         if (currentImageIndex > 0) {
@@ -323,17 +360,20 @@ const Search = () => {
         }
     };
 
+
     // Função para verificar se deve mostrar a similaridade com base no método de busca
     const shouldShowSimilarity = (method: number) => {
         // Mostrar similaridade apenas para busca por imagem (método 0)
         return method === 0;
     };
 
+
     return (
         <Box>
             <Typography variant="h4" gutterBottom>
                 Busca de Faces
             </Typography>
+
 
             <Paper elevation={3} sx={{
                 p: { xs: 2, md: 3 },
@@ -361,11 +401,13 @@ const Search = () => {
                     <Tab icon={<PersonIcon />} label="Buscar por Nome" />
                 </Tabs>
 
+
                 {searchMethod === 0 ? (
                     <Box>
                         <Typography variant="body1" gutterBottom>
                             Faça upload de uma imagem para buscar faces similares no sistema.
                         </Typography>
+
 
                         <Grid container spacing={2} alignItems="center">
                             <Grid item xs={12} sm={6}>
@@ -391,6 +433,7 @@ const Search = () => {
                                 )}
                             </Grid>
 
+
                             <Grid item xs={12} sm={6}>
                                 <Button
                                     variant="contained"
@@ -405,6 +448,7 @@ const Search = () => {
                                 </Button>
                             </Grid>
                         </Grid>
+
 
                         {/* Preview da imagem */}
                         {previewUrl && (
@@ -434,6 +478,7 @@ const Search = () => {
                             Digite o RG da pessoa para buscar faces similares no sistema.
                         </Typography>
 
+
                         <Grid container spacing={2} alignItems="center">
                             <Grid item xs={12} sm={6}>
                                 <TextField
@@ -447,6 +492,7 @@ const Search = () => {
                                     inputProps={{ maxLength: 11 }}
                                 />
                             </Grid>
+
 
                             <Grid item xs={12} sm={6}>
                                 <Button
@@ -469,6 +515,7 @@ const Search = () => {
                             Digite o CPF da pessoa para buscar faces similares no sistema.
                         </Typography>
 
+
                         <Grid container spacing={2} alignItems="center">
                             <Grid item xs={12} sm={6}>
                                 <TextField
@@ -481,6 +528,7 @@ const Search = () => {
                                     helperText="Digite o CPF da pessoa no formato 000.000.000-00"
                                 />
                             </Grid>
+
 
                             <Grid item xs={12} sm={6}>
                                 <Button
@@ -503,6 +551,7 @@ const Search = () => {
                             Digite o nome da pessoa para buscar faces similares no sistema.
                         </Typography>
 
+
                         <Grid container spacing={2} alignItems="center">
                             <Grid item xs={12} sm={6}>
                                 <TextField
@@ -515,6 +564,7 @@ const Search = () => {
                                     helperText="Digite o nome sem acentos"
                                 />
                             </Grid>
+
 
                             <Grid item xs={12} sm={6}>
                                 <Button
@@ -533,11 +583,13 @@ const Search = () => {
                     </Box>
                 )}
 
+
                 {loading && (
                     <Box sx={{ width: '100%', mt: 3 }}>
                         <LinearProgress />
                     </Box>
                 )}
+
 
                 {error && (
                     <Alert severity="error" sx={{ mt: 3 }}>
@@ -545,11 +597,13 @@ const Search = () => {
                     </Alert>
                 )}
 
+
                 {success && results.length > 0 && (
                     <Alert severity="success" sx={{ mt: 3 }}>
                         Busca realizada com sucesso.
                     </Alert>
                 )}
+
 
                 {success && results.length === 0 && (
                     <Alert severity="info" sx={{ mt: 3 }}>
@@ -558,11 +612,13 @@ const Search = () => {
                 )}
             </Paper>
 
+
             {results.length > 0 && (
                 <Box>
                     <Typography variant="h5" gutterBottom>
                         Resultados da Busca
                     </Typography>
+
 
                     <Grid container spacing={2}>
                         {results.map((result, index) => (
@@ -571,7 +627,7 @@ const Search = () => {
                                     <CardMedia
                                         component="img"
                                         height="200"
-                                        image={`http://localhost:8000/api/persons/${result.person_id}/image`}
+                                        image={`${process.env.REACT_APP_API_URL || '/api'}/persons/${result.person_id}/image`}
                                         alt={result.person_name}
                                         onError={(e: any) => {
                                             e.target.onerror = null;
@@ -592,6 +648,7 @@ const Search = () => {
                                             )}
                                         </Box>
 
+
                                         <Typography variant="body2" color="text.secondary" gutterBottom>
                                             RG: {result.person_id}
                                         </Typography>
@@ -599,9 +656,11 @@ const Search = () => {
                                             CPF: {result.cpf}
                                         </Typography>
 
+
                                         <Typography variant="body2" color="text.secondary">
                                             Origem: {result.origin}
                                         </Typography>
+
 
                                         {shouldShowSimilarity(searchMethod) && (
                                             <Box sx={{ mt: 2, display: 'flex', alignItems: 'center' }}>
@@ -639,6 +698,7 @@ const Search = () => {
                 </Box>
             )}
 
+
             {/* Modal de detalhes com suporte a múltiplas imagens */}
             <Dialog
                 open={detailsOpen}
@@ -661,7 +721,7 @@ const Search = () => {
                                     <Box sx={{ position: 'relative' }}>
                                         <Box
                                             component="img"
-                                            src={`http://localhost:8000/api/persons/${selectedResult.person_id}/image?image_id=${personImages[currentImageIndex].id}`}
+                                            src={`${process.env.REACT_APP_API_URL || '/api'}/persons/${selectedResult.person_id}/image?image_id=${personImages[currentImageIndex].id}`}
                                             alt={selectedResult.person_name}
                                             sx={{
                                                 width: '100%',
@@ -676,6 +736,7 @@ const Search = () => {
                                             }}
                                         />
 
+
                                         {personImages.length > 1 && (
                                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 2 }}>
                                                 <IconButton
@@ -685,9 +746,11 @@ const Search = () => {
                                                     <ArrowBackIcon />
                                                 </IconButton>
 
+
                                                 <Typography>
                                                     {currentImageIndex + 1} / {personImages.length}
                                                 </Typography>
+
 
                                                 <IconButton
                                                     onClick={handleNextImage}
@@ -701,7 +764,7 @@ const Search = () => {
                                 ) : (
                                     <Box
                                         component="img"
-                                        src={`http://localhost:8000/api/persons/${selectedResult.person_id}/image`}
+                                        src={`${process.env.REACT_APP_API_URL || '/api'}/persons/${selectedResult.person_id}/image`}
                                         alt={selectedResult.person_name}
                                         sx={{
                                             width: '100%',
@@ -722,7 +785,9 @@ const Search = () => {
                                     {selectedResult.person_name}
                                 </Typography>
 
+
                                 <Divider sx={{ my: 2 }} />
+
 
                                 <Typography variant="body1">
                                     <strong>RG:</strong> {selectedResult.person_id}
@@ -734,17 +799,20 @@ const Search = () => {
                                     <strong>Origem:</strong> {selectedResult.origin}
                                 </Typography>
 
+
                                 {shouldShowSimilarity(searchMethod) && (
                                     <Typography variant="body1">
                                         <strong>Similaridade:</strong> {(selectedResult.similarity * 100).toFixed(1)}%
                                     </Typography>
                                 )}
 
+
                                 {personImages.length > 0 && (
                                     <Typography variant="body1" sx={{ mt: 1 }}>
                                         <strong>Total de imagens:</strong> {personImages.length}
                                     </Typography>
                                 )}
+
 
                                 {shouldShowSimilarity(searchMethod) && (
                                     <Box sx={{ mt: 2, display: 'flex', alignItems: 'center' }}>
@@ -778,5 +846,6 @@ const Search = () => {
         </Box>
     );
 };
+
 
 export default Search;
