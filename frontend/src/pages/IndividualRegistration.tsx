@@ -7,9 +7,26 @@ import {
     TextField,
     Button,
     Alert,
-    Snackbar
+    Snackbar,
+    Container,
+    Stack,
+    Divider,
+    Card,
+    CardContent,
+    CircularProgress,
+    Avatar,
+    IconButton,
+    useTheme
 } from '@mui/material';
-import { Upload as UploadIcon } from '@mui/icons-material';
+import {
+    Upload as UploadIcon,
+    Person as PersonIcon,
+    Badge as BadgeIcon,
+    CreditCard as CreditCardIcon,
+    Save as SaveIcon,
+    Close as CloseIcon,
+    Check as CheckIcon
+} from '@mui/icons-material';
 import { uploadImage } from '../services/personService';
 import { formatCPF, unformatCPF } from '../services/userService';
 import { authService } from '../services/authService';
@@ -76,6 +93,7 @@ const compressImage = (file: File): Promise<File> => {
 };
 
 const IndividualRegistration = () => {
+    const theme = useTheme();
     const [name, setName] = useState('');
     const [rg, setRg] = useState('');
     const [cpf, setCpf] = useState('');
@@ -157,7 +175,7 @@ const IndividualRegistration = () => {
             const result = await uploadImage(renamedFile);
 
             if (result.success) {
-                setSuccess('Indivíduo cadastrado com sucesso!');
+                setSuccess('Pessoa cadastrada com sucesso!');
 
                 // Limpar formulário
                 setName('');
@@ -182,111 +200,260 @@ const IndividualRegistration = () => {
     };
 
     return (
-        <Box>
-            <Typography variant="h4" gutterBottom>
-                Cadastro de Indivíduo
-            </Typography>
+        <Container maxWidth="lg" sx={{ py: 4 }}>
 
-            <Paper elevation={3} sx={{ p: 3, mb: 3 }}>
+            <Paper
+                elevation={3}
+                sx={{
+                    borderRadius: 2,
+                    overflow: 'hidden',
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.1)'
+                }}
+            >
+                <Box
+                    sx={{
+                        bgcolor: 'primary.main',
+                        p: 2,
+                        color: 'white',
+                        display: 'flex',
+                        alignItems: 'center'
+                    }}
+                >
+                    <PersonIcon sx={{ mr: 1.5 }} />
+                    <Typography variant="h6">Informações da Pessoa</Typography>
+                </Box>
+
                 <form onSubmit={handleSubmit}>
-                    <Grid container spacing={3}>
-                        <Grid item xs={12} md={6}>
-                            <TextField
-                                label="Nome Completo"
-                                variant="outlined"
-                                fullWidth
-                                value={name}
-                                onChange={(e) => {
-                                    // Remove acentos e caracteres especiais
-                                    const cleanValue = e.target.value
-                                        .normalize('NFD')
-                                        .replace(/[\u0300-\u036f]/g, '')
-                                        .replace(/[^a-zA-Z\s]/g, '');
-                                    setName(cleanValue);
-                                }}
-                                required
-                            />
-                        </Grid>
-
-                        <Grid item xs={12} md={6}>
-                            <TextField
-                                label="RG"
-                                variant="outlined"
-                                fullWidth
-                                value={rg}
-                                onChange={(e) => setRg(e.target.value.replace(/\D/g, ''))}
-                                inputProps={{ maxLength: 11 }}
-                                required
-                            />
-                        </Grid>
-
-                        <Grid item xs={12} md={6}>
-                            <TextField
-                                label="CPF"
-                                variant="outlined"
-                                fullWidth
-                                value={cpf}
-                                onChange={handleCpfChange}
-                                inputProps={{ maxLength: 14 }}
-                                required
-                            />
-                        </Grid>
-
-                        <Grid item xs={12} md={6}>
-                            <Button
-                                variant="contained"
-                                component="label"
-                                startIcon={<UploadIcon />}
-                                fullWidth
-                                sx={{ height: 56 }}
-                            >
-                                Selecionar Imagem
-                                <input
-                                    type="file"
-                                    hidden
-                                    accept="image/*"
-                                    onChange={handleFileChange}
-                                />
-                            </Button>
-                            {file && (
-                                <Typography variant="body2" sx={{ mt: 1 }}>
-                                    {file.name} ({(file.size / 1024).toFixed(1)} KB)
-                                </Typography>
-                            )}
-                        </Grid>
-
-                        {previewUrl && (
+                    <Box sx={{ p: { xs: 2, md: 4 } }}>
+                        <Grid container spacing={3}>
                             <Grid item xs={12} md={6}>
-                                <Typography variant="subtitle1" gutterBottom>
-                                    Preview da Imagem:
-                                </Typography>
-                                <Box
-                                    component="img"
-                                    src={previewUrl}
-                                    alt="Preview"
-                                    sx={{
-                                        maxWidth: '100%',
-                                        maxHeight: 300,
-                                        objectFit: 'contain',
-                                        border: '1px solid #ddd',
-                                        borderRadius: 1,
-                                    }}
-                                />
-                            </Grid>
-                        )}
+                                <Stack spacing={3}>
+                                    <TextField
+                                        label="Nome Completo"
+                                        variant="outlined"
+                                        fullWidth
+                                        value={name}
+                                        onChange={(e) => {
+                                            // Remove acentos e caracteres especiais
+                                            const cleanValue = e.target.value
+                                                .normalize('NFD')
+                                                .replace(/[\u0300-\u036f]/g, '')
+                                                .replace(/[^a-zA-Z\s]/g, '');
+                                            setName(cleanValue);
+                                        }}
+                                        required
+                                        InputProps={{
+                                            startAdornment: (
+                                                <PersonIcon color="action" sx={{ mr: 1 }} />
+                                            ),
+                                        }}
+                                        sx={{
+                                            '& .MuiOutlinedInput-root': {
+                                                borderRadius: 2,
+                                                '&.Mui-focused fieldset': {
+                                                    borderWidth: 2
+                                                }
+                                            }
+                                        }}
+                                    />
 
-                        <Grid item xs={12}>
+                                    <TextField
+                                        label="RG"
+                                        variant="outlined"
+                                        fullWidth
+                                        value={rg}
+                                        onChange={(e) => setRg(e.target.value.replace(/\D/g, ''))}
+                                        inputProps={{ maxLength: 11 }}
+                                        required
+                                        InputProps={{
+                                            startAdornment: (
+                                                <BadgeIcon color="action" sx={{ mr: 1 }} />
+                                            ),
+                                        }}
+                                        sx={{
+                                            '& .MuiOutlinedInput-root': {
+                                                borderRadius: 2,
+                                                '&.Mui-focused fieldset': {
+                                                    borderWidth: 2
+                                                }
+                                            }
+                                        }}
+                                    />
+
+                                    <TextField
+                                        label="CPF"
+                                        variant="outlined"
+                                        fullWidth
+                                        value={cpf}
+                                        onChange={handleCpfChange}
+                                        inputProps={{ maxLength: 14 }}
+                                        required
+                                        InputProps={{
+                                            startAdornment: (
+                                                <CreditCardIcon color="action" sx={{ mr: 1 }} />
+                                            ),
+                                        }}
+                                        sx={{
+                                            '& .MuiOutlinedInput-root': {
+                                                borderRadius: 2,
+                                                '&.Mui-focused fieldset': {
+                                                    borderWidth: 2
+                                                }
+                                            }
+                                        }}
+                                    />
+
+                                    <Button
+                                        variant="outlined"
+                                        component="label"
+                                        startIcon={<UploadIcon />}
+                                        fullWidth
+                                        sx={{
+                                            height: 56,
+                                            borderRadius: 2,
+                                            borderWidth: 2,
+                                            borderStyle: 'dashed',
+                                            borderColor: theme.palette.primary.light,
+                                            '&:hover': {
+                                                borderColor: theme.palette.primary.main,
+                                                backgroundColor: 'rgba(25, 118, 210, 0.04)'
+                                            }
+                                        }}
+                                    >
+                                        Selecionar Imagem
+                                        <input
+                                            type="file"
+                                            hidden
+                                            accept="image/*"
+                                            onChange={handleFileChange}
+                                        />
+                                    </Button>
+                                    {file && (
+                                        <Box sx={{
+                                            mt: 1,
+                                            p: 1.5,
+                                            borderRadius: 1,
+                                            bgcolor: 'rgba(0,0,0,0.03)',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'space-between'
+                                        }}>
+                                            <Typography variant="body2" color="text.secondary">
+                                                {file.name} ({(file.size / 1024).toFixed(1)} KB)
+                                            </Typography>
+                                            <Divider orientation="vertical" flexItem sx={{ mx: 1 }} />
+                                            <Typography
+                                                variant="body2"
+                                                sx={{
+                                                    color: file.size > 400 * 1024 ? 'warning.main' : 'success.main',
+                                                    fontWeight: 'medium'
+                                                }}
+                                            >
+                                                {file.size > 400 * 1024 ? 'Comprimido' : 'Pronto'}
+                                            </Typography>
+                                        </Box>
+                                    )}
+                                </Stack>
+                            </Grid>
+
+                            <Grid item xs={12} md={6}>
+                                <Card
+                                    elevation={2}
+                                    sx={{
+                                        height: '100%',
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        borderRadius: 2,
+                                        overflow: 'hidden'
+                                    }}
+                                >
+                                    <Box sx={{
+                                        bgcolor: 'primary.main',
+                                        p: 1.5,
+                                        color: 'white',
+                                        display: 'flex',
+                                        alignItems: 'center'
+                                    }}>
+                                        <Avatar sx={{ bgcolor: 'white', color: 'primary.main', mr: 1.5 }}>
+                                            <PersonIcon />
+                                        </Avatar>
+                                        <Typography variant="subtitle1">
+                                            Preview da Imagem
+                                        </Typography>
+                                    </Box>
+
+                                    <CardContent sx={{
+                                        flexGrow: 1,
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        bgcolor: 'rgba(0,0,0,0.02)',
+                                        p: 3
+                                    }}>
+                                        {previewUrl ? (
+                                            <Box
+                                                component="img"
+                                                src={previewUrl}
+                                                alt="Preview"
+                                                sx={{
+                                                    maxWidth: '100%',
+                                                    maxHeight: 300,
+                                                    objectFit: 'contain',
+                                                    borderRadius: 1,
+                                                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+                                                }}
+                                            />
+                                        ) : (
+                                            <Box sx={{
+                                                width: '100%',
+                                                height: 300,
+                                                display: 'flex',
+                                                flexDirection: 'column',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                border: '2px dashed',
+                                                borderColor: 'rgba(0,0,0,0.1)',
+                                                borderRadius: 2,
+                                                color: 'text.disabled'
+                                            }}>
+                                                <UploadIcon sx={{ fontSize: 60, mb: 2, opacity: 0.7 }} />
+                                                <Typography variant="body2" color="text.secondary">
+                                                    Nenhuma imagem selecionada
+                                                </Typography>
+                                                <Typography variant="caption" color="text.disabled" align="center" sx={{ mt: 1, maxWidth: '80%' }}>
+                                                    Selecione uma imagem para visualizar o preview
+                                                </Typography>
+                                            </Box>
+                                        )}
+                                    </CardContent>
+                                </Card>
+                            </Grid>
+                        </Grid>
+
+                        <Divider sx={{ my: 4 }} />
+
+                        <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
                             <Button
                                 type="submit"
                                 variant="contained"
                                 color="primary"
-                                fullWidth
+                                size="large"
+                                startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <SaveIcon />}
                                 disabled={loading}
+                                sx={{
+                                    px: 4,
+                                    py: 1.5,
+                                    borderRadius: 2,
+                                    boxShadow: '0 4px 12px rgba(25, 118, 210, 0.2)',
+                                    '&:hover': {
+                                        boxShadow: '0 6px 16px rgba(25, 118, 210, 0.3)'
+                                    }
+                                }}
                             >
-                                {loading ? 'Cadastrando...' : 'Cadastrar Indivíduo'}
+                                {loading ? 'Cadastrando...' : 'Cadastrar Pessoa'}
                             </Button>
-                        </Grid>
-                    </Grid>
+                        </Box>
+                    </Box>
                 </form>
             </Paper>
 
@@ -302,12 +469,31 @@ const IndividualRegistration = () => {
                 <Alert
                     onClose={handleCloseSnackbar}
                     severity={error ? 'error' : 'success'}
-                    sx={{ width: '100%' }}
+                    variant="filled"
+                    sx={{
+                        width: '100%',
+                        borderRadius: 2,
+                        boxShadow: error
+                            ? '0 4px 12px rgba(244, 67, 54, 0.2)'
+                            : '0 4px 12px rgba(76, 175, 80, 0.2)',
+                        alignItems: 'center'
+                    }}
+                    icon={error ? <CloseIcon /> : <CheckIcon />}
+                    action={
+                        <IconButton
+                            size="small"
+                            aria-label="close"
+                            color="inherit"
+                            onClick={handleCloseSnackbar}
+                        >
+                            <CloseIcon fontSize="small" />
+                        </IconButton>
+                    }
                 >
                     {error || success}
                 </Alert>
             </Snackbar>
-        </Box>
+        </Container>
     );
 };
 
