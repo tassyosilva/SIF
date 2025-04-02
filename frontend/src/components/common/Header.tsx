@@ -1,4 +1,4 @@
-import { AppBar, Toolbar, Typography, IconButton, Box, Menu, MenuItem, useMediaQuery, useTheme, ListItemIcon, Divider, alpha, Avatar, styled } from '@mui/material';
+import { AppBar, Toolbar, Typography, IconButton, Box, Menu, MenuItem, useMediaQuery, useTheme, ListItemIcon, Divider, alpha, Avatar, styled, Button } from '@mui/material';
 import {
     Menu as MenuIcon,
     AccountCircle as AccountCircleIcon,
@@ -311,7 +311,7 @@ const Header = ({ open, toggleDrawer }: HeaderProps) => {
                             sx={{
                                 width: 36,
                                 height: 36,
-                                bgcolor: theme.palette.primary.main,
+                                bgcolor: '#FFD700',
                                 color: 'black',
                                 fontWeight: 'bold',
                                 fontSize: '0.9rem',
@@ -326,52 +326,39 @@ const Header = ({ open, toggleDrawer }: HeaderProps) => {
                         </Typography>
                     </Box>
 
-                    <UserIconButton
-                        size="large"
-                        aria-label="account of current user"
-                        aria-controls="menu-appbar"
-                        aria-haspopup="true"
-                        onClick={handleMenu}
-                        color="inherit"
+                    <Button
+                        variant="outlined"
+                        startIcon={<AccountCircleIcon />}
+                        onClick={() => navigate('/my-account')}
+                        sx={{
+                            mr: 2,
+                            color: 'white',
+                            borderColor: 'rgba(255, 255, 255, 0.5)',
+                            '&:hover': {
+                                borderColor: 'white',
+                                backgroundColor: alpha('#ffffff', 0.1),
+                                transform: 'translateY(-2px)',
+                                transition: 'all 0.2s'
+                            }
+                        }}
                     >
-                        <AccountCircleIcon />
-                    </UserIconButton>
+                        Minha Conta
+                    </Button>
 
-                    <UserMenu
-                        id="menu-appbar"
-                        anchorEl={anchorEl}
-                        anchorOrigin={{
-                            vertical: 'top',
-                            horizontal: 'right',
+                    <Button
+                        variant="text"
+                        color="inherit"
+                        startIcon={<ExitToAppIcon />}
+                        onClick={handleLogout}
+                        sx={{
+                            color: 'white',
+                            '&:hover': {
+                                backgroundColor: alpha('#ffffff', 0.1)
+                            }
                         }}
-                        keepMounted
-                        transformOrigin={{
-                            vertical: 'top',
-                            horizontal: 'right',
-                        }}
-                        open={Boolean(anchorEl)}
-                        onClose={handleClose}
                     >
-                        <MenuItem onClick={() => {
-                            handleClose();
-                            navigate('/my-account');
-                        }}>
-                            <ListItemIcon>
-                                <AccountCircleIcon />
-                            </ListItemIcon>
-                            <Typography>Minha Conta</Typography>
-                        </MenuItem>
-                        <Divider sx={{ backgroundColor: alpha('#FFD700', 0.2), my: 1 }} />
-                        <MenuItem onClick={() => {
-                            handleClose();
-                            handleLogout();
-                        }}>
-                            <ListItemIcon>
-                                <ExitToAppIcon />
-                            </ListItemIcon>
-                            <Typography>Sair</Typography>
-                        </MenuItem>
-                    </UserMenu>
+                        Sair
+                    </Button>
                 </Box>
             </Toolbar>
         </StyledAppBar>
