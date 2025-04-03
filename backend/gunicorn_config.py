@@ -1,0 +1,12 @@
+workers = 16
+worker_class = 'uvicorn.workers.UvicornWorker'
+bind = '0.0.0.0:8000'
+timeout = 120
+keepalive = 5
+max_requests = 1000
+max_requests_jitter = 50
+graceful_timeout = 30
+access_logfile = '/var/log/face-recognition/gunicorn-access.log'
+error_logfile = '/var/log/face-recognition/gunicorn-error.log'
+capture_output = True
+loglevel = 'info'
