@@ -28,7 +28,7 @@ class Settings(BaseSettings):
     FAISS_INDEX_TYPE: str = "L2"
     
     # Configurações de processamento
-    BATCH_WORKERS: int = 4
+    BATCH_WORKERS: int = 8
     SIMILARITY_THRESHOLD: float = 0.7
     
     # Configurações de e-mail

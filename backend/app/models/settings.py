@@ -27,7 +27,7 @@ class Settings(Base):
     similarity_threshold = Column(Float, default=0.7)
     
     # Configurações de backup
-    auto_backup = Column(Boolean, default=True)
+    auto_backup = Column(Boolean, default=False)
     backup_interval = Column(Integer, default=24)  # horas
     backup_dir = Column(String, default="./data/backups")
     last_backup = Column(DateTime, nullable=True)
