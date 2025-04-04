@@ -160,27 +160,29 @@ const Dashboard: React.FC = () => {
             try {
                 setLoading(true);
 
-                // Buscar pessoas
-                const persons = await getPersons(0, 1000);
-                setTotalPersons(persons.length);
-                setHasData(persons.length > 0);
-
                 // Buscar informações do sistema usando o mesmo serviço API que funciona na página de configurações
                 try {
                     const systemInfoResponse = await api.get('/settings/system-info');
                     // Verificar se a resposta tem os dados esperados
                     if (systemInfoResponse && systemInfoResponse.data) {
+                        setTotalPersons(systemInfoResponse.data.total_persons || 0);
                         setTotalImages(systemInfoResponse.data.total_images || 0);
+                        setHasData(systemInfoResponse.data.total_persons > 0);
                     } else {
-                        // Valor temporário até resolver o problema de API
                         console.log('Dados não encontrados na resposta da API, usando valor temporário');
+                        setTotalPersons(0);
                         setTotalImages(0);
+                        setHasData(false);
                     }
                 } catch (apiError) {
                     console.error('Erro ao buscar informações do sistema:', apiError);
-                    // Valor temporário até resolver o problema de API
+                    setTotalPersons(0);
                     setTotalImages(0);
+                    setHasData(false);
                 }
+
+                // Buscar pessoas para estatísticas por origem
+                const persons = await getPersons(0, 1000);
 
                 // Estatísticas por origem
                 const originCounts: Record<string, number> = {};
