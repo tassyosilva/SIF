@@ -150,7 +150,7 @@ def search_by_cpf(
 @router.post("/search-by-name/", response_model=SearchResponse)
 def search_by_name(
     name: str = Body(..., embed=True),
-    k: int = Query(5, description="Número de resultados a retornar"),
+    k: int = Query(25, description="Número de resultados a retornar"),
     db: Session = Depends(get_db)
 ):
     """

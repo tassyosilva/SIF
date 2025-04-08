@@ -73,7 +73,7 @@ export const searchByPersonCpf = async (cpf: string, k: number = 5) => {
 };
 
 // Buscar faces similares a partir do nome de uma pessoa
-export const searchByPersonName = async (name: string, k: number = 5) => {
+export const searchByPersonName = async (name: string, k: number = 25) => {
     try {
         const response = await api.post<SearchResponse>(`/recognition/search-by-name/?k=${k}`, { name });
         return response.data;

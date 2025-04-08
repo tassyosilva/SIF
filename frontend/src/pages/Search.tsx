@@ -244,7 +244,7 @@ const Search = () => {
                         setLoading(false);
                         return;
                     }
-                    response = await searchByPersonName(personName, 5);
+                    response = await searchByPersonName(personName, 25);
 
 
                     // Para busca por nome, filtramos resultados para incluir apenas aqueles
