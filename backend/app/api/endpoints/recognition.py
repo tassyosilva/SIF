@@ -17,9 +17,7 @@ async def search_faces(
     k: int = Query(5, description="Número de resultados a retornar"),
     db: Session = Depends(get_db)
 ):
-    """
-    Busca faces similares a partir de uma imagem de consulta.
-    """
+    """Busca faces similares a partir de uma imagem de consulta."""
     # Verificar se é uma imagem
     valid_extensions = ['.jpg', '.jpeg', '.png', '.bmp']
     file_ext = os.path.splitext(file.filename)[1].lower()
@@ -56,12 +54,11 @@ def search_by_person_id(
     db: Session = Depends(get_db)
 ):
     """
-    Busca faces similares a partir do ID de uma pessoa.
+    Busca diretamente uma pessoa pelo seu ID (RG).
     """
     # Buscar a pessoa no banco de dados
     person = db.query(Person).filter(Person.person_id == person_id).first()
     if not person:
-        # Em vez de lançar exceção, retornar resposta com erro
         return {
             "success": False,
             "message": "RG não encontrado no sistema.",
@@ -80,12 +77,25 @@ def search_by_person_id(
             "message": "Imagem da pessoa não encontrada no sistema.",
             "results": []
         }
-
-    # Buscar faces similares
-    from ...core.dependencies import get_file_processor
-    file_processor = get_file_processor()
-    result = file_processor.search_similar_faces(latest_image.file_path, k)
-    return result
+    
+    # Criar um resultado com similaridade 1.0 (correspondência exata)
+    result = {
+        "rank": 1,
+        "distance": 0.0,  # Distância zero (correspondência exata)
+        "similarity": 1.0,  # Similaridade máxima
+        "person_id": person.person_id,
+        "cpf": person.cpf,
+        "person_name": person.name,
+        "origin": person.origin,
+        "filename": latest_image.filename,
+        "processed_date": latest_image.processed_date.isoformat() if latest_image.processed_date else ""
+    }
+    
+    return {
+        "success": True,
+        "query_image": latest_image.filename,
+        "results": [result]
+    }
 
 @router.post("/search-by-cpf/", response_model=SearchResponse)
 def search_by_cpf(
@@ -94,12 +104,11 @@ def search_by_cpf(
     db: Session = Depends(get_db)
 ):
     """
-    Busca faces similares a partir do CPF de uma pessoa.
+    Busca diretamente uma pessoa pelo seu CPF.
     """
     # Buscar a pessoa no banco de dados
     person = db.query(Person).filter(Person.cpf == cpf).first()
     if not person:
-        # Em vez de lançar exceção, retornar resposta com erro
         return {
             "success": False,
             "message": "CPF não encontrado no sistema.",
@@ -118,12 +127,25 @@ def search_by_cpf(
             "message": "Imagem da pessoa não encontrada no sistema.",
             "results": []
         }
-
-    # Buscar faces similares
-    from ...core.dependencies import get_file_processor
-    file_processor = get_file_processor()
-    result = file_processor.search_similar_faces(latest_image.file_path, k)
-    return result
+    
+    # Criar um resultado com similaridade 1.0 (correspondência exata)
+    result = {
+        "rank": 1,
+        "distance": 0.0,
+        "similarity": 1.0,
+        "person_id": person.person_id,
+        "cpf": person.cpf,
+        "person_name": person.name,
+        "origin": person.origin,
+        "filename": latest_image.filename,
+        "processed_date": latest_image.processed_date.isoformat() if latest_image.processed_date else ""
+    }
+    
+    return {
+        "success": True,
+        "query_image": latest_image.filename,
+        "results": [result]
+    }
 
 @router.post("/search-by-name/", response_model=SearchResponse)
 def search_by_name(
@@ -132,33 +154,48 @@ def search_by_name(
     db: Session = Depends(get_db)
 ):
     """
-    Busca faces similares a partir do nome de uma pessoa.
+    Busca pessoas pelo nome.
     """
-    # Buscar a pessoa no banco de dados (usando LIKE para correspondência parcial)
-    person = db.query(Person).filter(Person.name.ilike(f"%{name}%")).first()
-    if not person:
-        # Em vez de lançar exceção, retornar resposta com erro
+    # Buscar pessoas no banco de dados (usando LIKE para correspondência parcial)
+    persons = db.query(Person).filter(Person.name.ilike(f"%{name}%")).limit(k).all()
+    if not persons:
         return {
             "success": False,
             "message": "Nome não encontrado no sistema.",
             "results": []
         }
     
-    # Buscar a imagem mais recente desta pessoa
-    from ...models.person import PersonImage
-    latest_image = db.query(PersonImage).filter(
-        PersonImage.person_id == person.person_id
-    ).order_by(PersonImage.processed_date.desc()).first()
+    results = []
+    # Para cada pessoa encontrada, buscar a imagem mais recente
+    for i, person in enumerate(persons):
+        from ...models.person import PersonImage
+        latest_image = db.query(PersonImage).filter(
+            PersonImage.person_id == person.person_id
+        ).order_by(PersonImage.processed_date.desc()).first()
+            
+        if latest_image and latest_image.file_path and os.path.exists(latest_image.file_path):
+            # Adicionar à lista de resultados
+            results.append({
+                "rank": i + 1,
+                "distance": 0.0,
+                "similarity": 1.0,
+                "person_id": person.person_id,
+                "cpf": person.cpf,
+                "person_name": person.name,
+                "origin": person.origin,
+                "filename": latest_image.filename,
+                "processed_date": latest_image.processed_date.isoformat() if latest_image.processed_date else ""
+            })
     
-    if not latest_image or not latest_image.file_path or not os.path.exists(latest_image.file_path):
+    if not results:
         return {
             "success": False,
-            "message": "Imagem da pessoa não encontrada no sistema.",
+            "message": "Imagens das pessoas não encontradas no sistema.",
             "results": []
         }
-
-    # Buscar faces similares
-    from ...core.dependencies import get_file_processor
-    file_processor = get_file_processor()
-    result = file_processor.search_similar_faces(latest_image.file_path, k)
-    return result
+    
+    return {
+        "success": True,
+        "query_image": "",  # Não há imagem de consulta
+        "results": results
+    }
