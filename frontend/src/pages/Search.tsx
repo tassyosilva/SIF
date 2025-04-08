@@ -1,398 +1,396 @@
 import { useState } from 'react';
 import {
-    Box,
-    Typography,
-    Paper,
-    Grid,
-    Button,
-    TextField,
-    Divider,
-    Card,
-    CardContent,
-    CardMedia,
-    CardActions,
-    CircularProgress,
-    Tabs,
-    Tab,
-    Alert,
-    Chip,
-    LinearProgress,
-    Dialog,
-    DialogTitle,
-    DialogContent,
-    DialogActions,
-    IconButton,
-    useMediaQuery,
-    useTheme,
-    Container,
-    Avatar,
-    Stack
+  Box,
+  Typography,
+  Paper,
+  Grid,
+  Button,
+  TextField,
+  Divider,
+  Card,
+  CardContent,
+  CardMedia,
+  CardActions,
+  CircularProgress,
+  Tabs,
+  Tab,
+  Alert,
+  Chip,
+  LinearProgress,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  IconButton,
+  useMediaQuery,
+  useTheme,
+  Container,
+  Avatar,
+  Stack
 } from '@mui/material';
 import {
-    Search as SearchIcon,
-    Upload as UploadIcon,
-    Person as PersonIcon,
-    ArrowBackIos as ArrowBackIcon,
-    ArrowForwardIos as ArrowForwardIcon,
-    Badge as BadgeIcon,
-    CreditCard as CreditCardIcon,
-    Face as FaceIcon,
-    PhotoLibrary as PhotoLibraryIcon
+  Search as SearchIcon,
+  Upload as UploadIcon,
+  Person as PersonIcon,
+  ArrowBackIos as ArrowBackIcon,
+  ArrowForwardIos as ArrowForwardIcon,
+  Badge as BadgeIcon,
+  CreditCard as CreditCardIcon,
+  Face as FaceIcon,
+  PhotoLibrary as PhotoLibraryIcon,
+  Close as CloseIcon
 } from '@mui/icons-material';
 import { searchByImage, searchByPersonId, SearchResult } from '../services/recognitionService';
-import {
-    searchByPersonCpf,
-    searchByPersonName
-} from '../services/recognitionService';
+import { searchByPersonCpf, searchByPersonName } from '../services/recognitionService';
 import { getPersonImages, PersonImage } from '../services/personService';
 
 const Search = () => {
-    const theme = useTheme();
-    const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-    const [searchMethod, setSearchMethod] = useState(0);
-    const [personId, setPersonId] = useState('');
-    const [personCpf, setPersonCpf] = useState('');
-    const [personName, setPersonName] = useState('');
-    const [file, setFile] = useState<File | null>(null);
-    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-    const [loading, setLoading] = useState(false);
-    const [results, setResults] = useState<SearchResult[]>([]);
-    const [error, setError] = useState<string | null>(null);
-    const [success, setSuccess] = useState(false);
-    const [detailsOpen, setDetailsOpen] = useState(false);
-    const [selectedResult, setSelectedResult] = useState<SearchResult | null>(null);
-    const [personImages, setPersonImages] = useState<PersonImage[]>([]);
-    const [currentImageIndex, setCurrentImageIndex] = useState(0);
-    const [loadingImages, setLoadingImages] = useState(false);
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const [searchMethod, setSearchMethod] = useState(0);
+  const [personId, setPersonId] = useState('');
+  const [personCpf, setPersonCpf] = useState('');
+  const [personName, setPersonName] = useState('');
+  const [file, setFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [results, setResults] = useState<SearchResult[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [selectedResult, setSelectedResult] = useState<SearchResult | null>(null);
+  const [personImages, setPersonImages] = useState<PersonImage[]>([]);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [loadingImages, setLoadingImages] = useState(false);
+  const [similarityThreshold, setSimilarityThreshold] = useState<number | null>(null); // null significa sem limite
 
-    // Função para formatar CPF
-    const formatCPF = (value: string) => {
-        const cpf = value.replace(/\D/g, '');
-        const cpfLimited = cpf.slice(0, 11);
-        if (cpfLimited.length <= 3) {
-            return cpfLimited;
-        } else if (cpfLimited.length <= 6) {
-            return `${cpfLimited.slice(0, 3)}.${cpfLimited.slice(3)}`;
-        } else if (cpfLimited.length <= 9) {
-            return `${cpfLimited.slice(0, 3)}.${cpfLimited.slice(3, 6)}.${cpfLimited.slice(6)}`;
-        } else {
-            return `${cpfLimited.slice(0, 3)}.${cpfLimited.slice(3, 6)}.${cpfLimited.slice(6, 9)}-${cpfLimited.slice(9)}`;
-        }
-    };
+  // Função para formatar CPF
+  const formatCPF = (value: string) => {
+    const cpf = value.replace(/\D/g, '');
+    const cpfLimited = cpf.slice(0, 11);
+    if (cpfLimited.length <= 3) {
+      return cpfLimited;
+    } else if (cpfLimited.length <= 6) {
+      return `${cpfLimited.slice(0, 3)}.${cpfLimited.slice(3)}`;
+    } else if (cpfLimited.length <= 9) {
+      return `${cpfLimited.slice(0, 3)}.${cpfLimited.slice(3, 6)}.${cpfLimited.slice(6)}`;
+    } else {
+      return `${cpfLimited.slice(0, 3)}.${cpfLimited.slice(3, 6)}.${cpfLimited.slice(6, 9)}-${cpfLimited.slice(9)}`;
+    }
+  };
 
-    // Função para remover acentos
-    const removeAccents = (str: string) => {
-        return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-    };
+  // Função para remover acentos
+  const removeAccents = (str: string) => {
+    return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  };
 
-    // Handlers para os campos de entrada
-    const handleRgChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setPersonId(e.target.value.slice(0, 11));
-    };
+  // Handlers para os campos de entrada
+  const handleRgChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setPersonId(e.target.value.slice(0, 11));
+  };
 
-    const handleCpfChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setPersonCpf(formatCPF(e.target.value));
-    };
+  const handleCpfChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setPersonCpf(formatCPF(e.target.value));
+  };
 
-    const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setPersonName(removeAccents(e.target.value));
-    };
+  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setPersonName(removeAccents(e.target.value));
+  };
 
-    const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
-        setSearchMethod(newValue);
-        resetSearch();
-    };
+  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+    setSearchMethod(newValue);
+    resetSearch();
+  };
 
-    const resetSearch = () => {
-        setPersonId('');
-        setPersonCpf('');
-        setPersonName('');
-        setFile(null);
-        setPreviewUrl(null);
-        setResults([]);
-        setError(null);
-        setSuccess(false);
-    };
+  const resetSearch = () => {
+    setPersonId('');
+    setPersonCpf('');
+    setPersonName('');
+    setFile(null);
+    setPreviewUrl(null);
+    setResults([]);
+    setError(null);
+    setSuccess(false);
+  };
 
-    const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        if (event.target.files && event.target.files[0]) {
-            const selectedFile = event.target.files[0];
-            setFile(selectedFile);
-            const fileUrl = URL.createObjectURL(selectedFile);
-            setPreviewUrl(fileUrl);
-        }
-    };
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (event.target.files && event.target.files[0]) {
+      const selectedFile = event.target.files[0];
+      setFile(selectedFile);
+      const fileUrl = URL.createObjectURL(selectedFile);
+      setPreviewUrl(fileUrl);
+    }
+  };
 
-    const handleSearch = async () => {
-        try {
-            setLoading(true);
-            setError(null);
-            setSuccess(false);
-            setResults([]);
+  const handleSearch = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      setSuccess(false);
+      setResults([]);
 
-            let response;
-            switch (searchMethod) {
-                case 0: // Busca por imagem
-                    if (!file) {
-                        setError('Por favor, selecione uma imagem para busca.');
-                        setLoading(false);
-                        return;
-                    }
-                    response = await searchByImage(file, 5);
-                    // Para busca por imagem, mantemos o comportamento atual
-                    if (response.success) {
-                        // Agrupar resultados por person_id, mantendo apenas o resultado com maior similaridade
-                        const groupedResults: { [key: string]: SearchResult } = {};
-                        response.results.forEach(result => {
-                            if (!groupedResults[result.person_id] ||
-                                result.similarity > groupedResults[result.person_id].similarity) {
-                                groupedResults[result.person_id] = result;
-                            }
-                        });
-                        // Converter de volta para array e ordenar por similaridade
-                        const uniqueResults = Object.values(groupedResults).sort((a, b) => b.similarity - a.similarity);
-                        setResults(uniqueResults);
-                    }
-                    break;
-                case 1: // Busca por RG
-                    if (!personId) {
-                        setError('Por favor, digite um RG válido.');
-                        setLoading(false);
-                        return;
-                    }
-                    response = await searchByPersonId(personId, 1); // Limitamos a 1 resultado
-                    // Para busca por RG, queremos apenas o resultado exato
-                    if (response.success && response.results.length > 0) {
-                        // Filtramos apenas o resultado com RG exato
-                        const exactMatches = response.results.filter(result => result.person_id === personId);
-                        // Se não houver correspondências exatas, mostramos uma mensagem
-                        if (exactMatches.length === 0) {
-                            setError('RG não encontrado no sistema.');
-                        } else {
-                            // Definimos similaridade como 1.0 (100%) para resultados exatos
-                            exactMatches.forEach(match => match.similarity = 1.0);
-                            setResults(exactMatches);
-                        }
-                    }
-                    break;
-                case 2: // Busca por CPF
-                    if (!personCpf) {
-                        setError('Por favor, digite um CPF válido.');
-                        setLoading(false);
-                        return;
-                    }
-                    response = await searchByPersonCpf(personCpf, 1); // Limitamos a 1 resultado
-                    // Para busca por CPF, queremos apenas o resultado exato
-                    if (response.success && response.results.length > 0) {
-                        // Filtramos apenas o resultado com CPF exato (considerando formatação)
-                        const exactMatches = response.results.filter(result => result.cpf === personCpf);
-                        // Se não houver correspondências exatas, mostramos uma mensagem
-                        if (exactMatches.length === 0) {
-                            setError('CPF não encontrado no sistema.');
-                        } else {
-                            // Definimos similaridade como 1.0 (100%) para resultados exatos
-                            exactMatches.forEach(match => match.similarity = 1.0);
-                            setResults(exactMatches);
-                        }
-                    }
-                    break;
-                case 3: // Busca por Nome
-                    if (!personName) {
-                        setError('Por favor, digite um nome para busca.');
-                        setLoading(false);
-                        return;
-                    }
-                    response = await searchByPersonName(personName, 25);
-                    // Para busca por nome, filtramos resultados para incluir apenas aqueles
-                    // que contêm o termo de pesquisa no nome
-                    if (response.success && response.results.length > 0) {
-                        const nameMatches = response.results.filter(result =>
-                            result.person_name.toLowerCase().includes(personName.toLowerCase())
-                        );
-                        // Se não houver correspondências, mostramos uma mensagem
-                        if (nameMatches.length === 0) {
-                            setError('Nome não encontrado no sistema.');
-                        } else {
-                            // Definimos similaridade como 1.0 (100%) para resultados por nome
-                            nameMatches.forEach(match => match.similarity = 1.0);
-                            // Agrupar resultados por person_id, mantendo apenas um resultado por pessoa
-                            const groupedResults: { [key: string]: SearchResult } = {};
-                            nameMatches.forEach(result => {
-                                if (!groupedResults[result.person_id]) {
-                                    groupedResults[result.person_id] = result;
-                                }
-                            });
-                            // Converter de volta para array
-                            const uniqueResults = Object.values(groupedResults);
-                            setResults(uniqueResults);
-                        }
-                    }
-                    break;
-                default:
-                    setError('Método de busca inválido.');
-                    setLoading(false);
-                    return;
-            }
-
-            console.log("API Response:", response);
-            console.log("Results:", response.results);
-
-            if (response.success) {
-                if (response.results.length > 0) {
-                    setSuccess(true);
-                } else {
-                    setError('Nenhum resultado encontrado para sua busca.');
-                }
-            } else {
-                setError(response.message || 'Erro desconhecido na busca.');
-            }
-        } catch (err: any) {
-            console.error('Erro na busca:', err);
-            // Se for erro 404, apresenta mensagem personalizada
-            if (err.response?.status === 404) {
-                switch (searchMethod) {
-                    case 1:
-                        setError('RG não encontrado no sistema.');
-                        break;
-                    case 2:
-                        setError('CPF não encontrado no sistema.');
-                        break;
-                    case 3:
-                        setError('Nome não encontrado no sistema.');
-                        break;
-                    default:
-                        setError('Registro não encontrado no sistema.');
-                }
-            } else {
-                setError(err.response?.data?.detail || 'Ocorreu um erro ao processar sua busca. Por favor, tente novamente.');
-            }
-        } finally {
+      let response;
+      switch (searchMethod) {
+        case 0: // Busca por imagem
+          if (!file) {
+            setError('Por favor, selecione uma imagem para busca.');
             setLoading(false);
+            return;
+          }
+          response = await searchByImage(file, 5);
+          // Para busca por imagem, mantemos o comportamento atual
+          if (response.success) {
+            // Agrupar resultados por person_id, mantendo apenas o resultado com maior similaridade
+            const groupedResults: { [key: string]: SearchResult } = {};
+            response.results.forEach(result => {
+              if (!groupedResults[result.person_id] ||
+                result.similarity > groupedResults[result.person_id].similarity) {
+                groupedResults[result.person_id] = result;
+              }
+            });
+            // Converter de volta para array e ordenar por similaridade
+            const uniqueResults = Object.values(groupedResults).sort((a, b) => b.similarity - a.similarity);
+            setResults(uniqueResults);
+          }
+          break;
+        case 1: // Busca por RG
+          if (!personId) {
+            setError('Por favor, digite um RG válido.');
+            setLoading(false);
+            return;
+          }
+          response = await searchByPersonId(personId, 1); // Limitamos a 1 resultado
+          // Para busca por RG, queremos apenas o resultado exato
+          if (response.success && response.results.length > 0) {
+            // Filtramos apenas o resultado com RG exato
+            const exactMatches = response.results.filter(result => result.person_id === personId);
+            // Se não houver correspondências exatas, mostramos uma mensagem
+            if (exactMatches.length === 0) {
+              setError('RG não encontrado no sistema.');
+            } else {
+              // Definimos similaridade como 1.0 (100%) para resultados exatos
+              exactMatches.forEach(match => match.similarity = 1.0);
+              setResults(exactMatches);
+            }
+          }
+          break;
+        case 2: // Busca por CPF
+          if (!personCpf) {
+            setError('Por favor, digite um CPF válido.');
+            setLoading(false);
+            return;
+          }
+          response = await searchByPersonCpf(personCpf, 1); // Limitamos a 1 resultado
+          // Para busca por CPF, queremos apenas o resultado exato
+          if (response.success && response.results.length > 0) {
+            // Filtramos apenas o resultado com CPF exato (considerando formatação)
+            const exactMatches = response.results.filter(result => result.cpf === personCpf);
+            // Se não houver correspondências exatas, mostramos uma mensagem
+            if (exactMatches.length === 0) {
+              setError('CPF não encontrado no sistema.');
+            } else {
+              // Definimos similaridade como 1.0 (100%) para resultados exatos
+              exactMatches.forEach(match => match.similarity = 1.0);
+              setResults(exactMatches);
+            }
+          }
+          break;
+        case 3: // Busca por Nome
+          if (!personName) {
+            setError('Por favor, digite um nome para busca.');
+            setLoading(false);
+            return;
+          }
+          response = await searchByPersonName(personName, 25);
+          // Para busca por nome, filtramos resultados para incluir apenas aqueles
+          // que contêm o termo de pesquisa no nome
+          if (response.success && response.results.length > 0) {
+            const nameMatches = response.results.filter(result =>
+              result.person_name.toLowerCase().includes(personName.toLowerCase()));
+            // Se não houver correspondências, mostramos uma mensagem
+            if (nameMatches.length === 0) {
+              setError('Nome não encontrado no sistema.');
+            } else {
+              // Definimos similaridade como 1.0 (100%) para resultados por nome
+              nameMatches.forEach(match => match.similarity = 1.0);
+              // Agrupar resultados por person_id, mantendo apenas um resultado por pessoa
+              const groupedResults: { [key: string]: SearchResult } = {};
+              nameMatches.forEach(result => {
+                if (!groupedResults[result.person_id]) {
+                  groupedResults[result.person_id] = result;
+                }
+              });
+              // Converter de volta para array
+              const uniqueResults = Object.values(groupedResults);
+              setResults(uniqueResults);
+            }
+          }
+          break;
+        default:
+          setError('Método de busca inválido.');
+          setLoading(false);
+          return;
+      }
+
+      console.log("API Response:", response);
+      console.log("Results:", response.results);
+
+      if (response.success) {
+        if (response.results.length > 0) {
+          setSuccess(true);
+        } else {
+          setError('Nenhum resultado encontrado para sua busca.');
         }
-    };
-
-    // Nova função para carregar todas as imagens de uma pessoa
-    const loadPersonImages = async (personId: string) => {
-        try {
-            setLoadingImages(true);
-            const images = await getPersonImages(personId);
-            setPersonImages(images);
-            setCurrentImageIndex(0);
-        } catch (error) {
-            console.error('Erro ao carregar imagens da pessoa:', error);
-            setPersonImages([]);
-        } finally {
-            setLoadingImages(false);
+      } else {
+        setError(response.message || 'Erro desconhecido na busca.');
+      }
+    } catch (err: any) {
+      console.error('Erro na busca:', err);
+      // Se for erro 404, apresenta mensagem personalizada
+      if (err.response?.status === 404) {
+        switch (searchMethod) {
+          case 1:
+            setError('RG não encontrado no sistema.');
+            break;
+          case 2:
+            setError('CPF não encontrado no sistema.');
+            break;
+          case 3:
+            setError('Nome não encontrado no sistema.');
+            break;
+          default:
+            setError('Registro não encontrado no sistema.');
         }
-    };
+      } else {
+        setError(err.response?.data?.detail || 'Ocorreu um erro ao processar sua busca. Por favor, tente novamente.');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    const handleOpenDetails = (result: SearchResult) => {
-        setSelectedResult(result);
-        setDetailsOpen(true);
-        // Carregar todas as imagens da pessoa quando o modal é aberto
-        loadPersonImages(result.person_id);
-    };
+  // Nova função para carregar todas as imagens de uma pessoa
+  const loadPersonImages = async (personId: string) => {
+    try {
+      setLoadingImages(true);
+      const images = await getPersonImages(personId);
+      setPersonImages(images);
+      setCurrentImageIndex(0);
+    } catch (error) {
+      console.error('Erro ao carregar imagens da pessoa:', error);
+      setPersonImages([]);
+    } finally {
+      setLoadingImages(false);
+    }
+  };
 
-    const handleNextImage = () => {
-        if (currentImageIndex < personImages.length - 1) {
-            setCurrentImageIndex(prev => prev + 1);
-        }
-    };
+  const handleOpenDetails = (result: SearchResult) => {
+    setSelectedResult(result);
+    setDetailsOpen(true);
+    // Carregar todas as imagens da pessoa quando o modal é aberto
+    loadPersonImages(result.person_id);
+  };
 
-    const handlePrevImage = () => {
-        if (currentImageIndex > 0) {
-            setCurrentImageIndex(prev => prev - 1);
-        }
-    };
+  const handleNextImage = () => {
+    if (currentImageIndex < personImages.length - 1) {
+      setCurrentImageIndex(prev => prev + 1);
+    }
+  };
 
-    // Função para verificar se deve mostrar a similaridade com base no método de busca
-    const shouldShowSimilarity = (method: number) => {
-        // Mostrar similaridade apenas para busca por imagem (método 0)
-        return method === 0;
-    };
+  const handlePrevImage = () => {
+    if (currentImageIndex > 0) {
+      setCurrentImageIndex(prev => prev - 1);
+    }
+  };
 
-    // Função para obter a cor com base na similaridade
-    const getSimilarityColor = (similarity: number) => {
-        if (similarity >= 0.9) return theme.palette.success.main;
-        if (similarity >= 0.8) return theme.palette.primary.main;
-        if (similarity >= 0.7) return theme.palette.warning.main;
-        return theme.palette.error.main;
-    };
+  // Função para verificar se deve mostrar a similaridade com base no método de busca
+  const shouldShowSimilarity = (method: number) => {
+    // Mostrar similaridade apenas para busca por imagem (método 0)
+    return method === 0;
+  };
 
-    // Função para obter o ícone do método de busca
-    const getSearchMethodIcon = (index: number) => {
-        switch (index) {
-            case 0:
-                return <FaceIcon />;
-            case 1:
-                return <BadgeIcon />;
-            case 2:
-                return <CreditCardIcon />;
-            case 3:
-                return <PersonIcon />;
-            default:
-                return <SearchIcon />;
-        }
-    };
+  // Função para obter a cor com base na similaridade
+  const getSimilarityColor = (similarity: number) => {
+    if (similarity >= 0.9) return theme.palette.success.main;
+    if (similarity >= 0.8) return theme.palette.primary.main;
+    if (similarity >= 0.7) return theme.palette.warning.main;
+    return theme.palette.error.main;
+  };
 
-    return (
-        <Container maxWidth="lg" sx={{ py: 4 }}>
-            <Paper
-                elevation={3}
-                sx={{
-                    p: { xs: 2, md: 4 },
-                    mb: 4,
-                    borderRadius: 2,
-                    boxShadow: '0 4px 20px rgba(0,0,0,0.1)'
-                }}
-            >
-                <Tabs
-                    value={searchMethod}
-                    onChange={handleTabChange}
-                    indicatorColor="primary"
-                    textColor="primary"
-                    variant={isMobile ? "scrollable" : "fullWidth"}
-                    scrollButtons={isMobile ? "auto" : false}
-                    allowScrollButtonsMobile
-                    sx={{
-                        mb: 4,
-                        '& .MuiTabs-indicator': {
-                            height: 3,
-                            borderRadius: '3px 3px 0 0'
-                        },
-                        '& .MuiTab-root': {
-                            fontWeight: 'medium',
-                            py: 2
-                        }
-                    }}
-                >
-                    <Tab
-                        icon={<UploadIcon />}
-                        label="Buscar por Imagem"
-                        iconPosition="start"
-                        sx={{
-                            borderBottom: '1px solid #e0e0e0',
-                            transition: 'all 0.2s ease',
-                            '&.Mui-selected': {
-                                fontWeight: 'bold',
-                                color: theme.palette.primary.main
-                            }
-                        }}
-                    />
-                    <Tab
-                        icon={<BadgeIcon />}
-                        label="Buscar por RG"
-                        iconPosition="start"
-                        sx={{
-                            borderBottom: '1px solid #e0e0e0',
-                            transition: 'all 0.2s ease',
-                            '&.Mui-selected': {
-                                fontWeight: 'bold',
-                                color: theme.palette.primary.main
-                            }
-                        }}
-                    />
-                    <Tab
+  // Função para obter o ícone do método de busca
+  const getSearchMethodIcon = (index: number) => {
+    switch (index) {
+      case 0:
+        return <FaceIcon />;
+      case 1:
+        return <BadgeIcon />;
+      case 2:
+        return <CreditCardIcon />;
+      case 3:
+        return <PersonIcon />;
+      default:
+        return <SearchIcon />;
+    }
+  };
+
+  return (
+    <Container maxWidth="lg" sx={{ py: 4 }}>
+      <Paper
+        elevation={3}
+        sx={{
+          p: { xs: 2, md: 4 },
+          mb: 4,
+          borderRadius: 2,
+          boxShadow: '0 4px 20px rgba(0,0,0,0.1)'
+        }}
+      >
+        <Tabs
+          value={searchMethod}
+          onChange={handleTabChange}
+          indicatorColor="primary"
+          textColor="primary"
+          variant={isMobile ? "scrollable" : "fullWidth"}
+          scrollButtons={isMobile ? "auto" : false}
+          allowScrollButtonsMobile
+          sx={{
+            mb: 4,
+            '& .MuiTabs-indicator': {
+              height: 3,
+              borderRadius: '3px 3px 0 0'
+            },
+            '& .MuiTab-root': {
+              fontWeight: 'medium',
+              py: 2
+            }
+          }}
+        >
+          <Tab
+            icon={<UploadIcon />}
+            label="Buscar por Imagem"
+            iconPosition="start"
+            sx={{
+              borderBottom: '1px solid #e0e0e0',
+              transition: 'all 0.2s ease',
+              '&.Mui-selected': {
+                fontWeight: 'bold',
+                color: theme.palette.primary.main
+              }
+            }}
+          />
+          <Tab
+            icon={<BadgeIcon />}
+            label="Buscar por RG"
+            iconPosition="start"
+            sx={{
+              borderBottom: '1px solid #e0e0e0',
+              transition: 'all 0.2s ease',
+              '&.Mui-selected': {
+                fontWeight: 'bold',
+                color: theme.palette.primary.main
+              }
+            }}
+          />
+          <Tab
             icon={<CreditCardIcon />}
             label="Buscar por CPF"
             iconPosition="start"
@@ -485,6 +483,48 @@ const Search = () => {
                   </Button>
                 </Grid>
               </Grid>
+              {/* Adicionar isso após o Grid container que contém o botão de upload e o botão de busca */}
+              {searchMethod === 0 && (
+                <Box sx={{ mt: 3, mb: 2 }}>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                    Filtrar resultados por similaridade mínima:
+                  </Typography>
+                  <Stack direction="row" spacing={1} justifyContent="center">
+                    <Chip
+                      key="nolimit"
+                      label="Sem limite"
+                      color={similarityThreshold === null ? "primary" : "default"}
+                      onClick={() => setSimilarityThreshold(null)}
+                      sx={{
+                        fontWeight: similarityThreshold === null ? 'bold' : 'normal',
+                        borderRadius: '16px',
+                        '&:hover': {
+                          backgroundColor: similarityThreshold === null
+                            ? theme.palette.primary.main
+                            : theme.palette.action.hover
+                        }
+                      }}
+                    />
+                    {[0.5, 0.6, 0.7, 0.8, 0.9].map((threshold) => (
+                      <Chip
+                        key={threshold}
+                        label={`${threshold * 100}%`}
+                        color={similarityThreshold === threshold ? "primary" : "default"}
+                        onClick={() => setSimilarityThreshold(threshold)}
+                        sx={{
+                          fontWeight: similarityThreshold === threshold ? 'bold' : 'normal',
+                          borderRadius: '16px',
+                          '&:hover': {
+                            backgroundColor: similarityThreshold === threshold
+                              ? theme.palette.primary.main
+                              : theme.palette.action.hover
+                          }
+                        }}
+                      />
+                    ))}
+                  </Stack>
+                </Box>
+              )}
               {/* Preview da imagem */}
               {previewUrl && (
                 <Box sx={{
@@ -752,382 +792,406 @@ const Search = () => {
           </Paper>
 
           <Grid container spacing={3}>
-            {results.map((result, index) => (
-              <Grid item xs={12} sm={6} md={4} key={index}>
-                <Card 
-                  elevation={3}
-                  sx={{
-                    height: '100%',
+            {/* Modificar esta linha para filtrar resultados */}
+            {results
+              .filter(result => searchMethod !== 0 || similarityThreshold === null || result.similarity >= similarityThreshold)
+              .map((result, index) => (
+                <Grid item xs={12} sm={6} md={4} key={index}>
+                  <Card
+                    elevation={3}
+                    sx={{
+                      height: '100%',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      borderRadius: 2,
+                      overflow: 'hidden',
+                      transition: 'transform 0.2s, box-shadow 0.2s',
+                      cursor: 'pointer', // Adicionar cursor de ponteiro para indicar que é clicável
+                      '&:hover': {
+                        transform: 'translateY(-4px)',
+                        boxShadow: '0 12px 24px rgba(0,0,0,0.1)'
+                      }
+                    }}
+                    onClick={() => handleOpenDetails(result)} // Adicionar o evento de clique aqui
+                  >
+                    <CardMedia
+                      component="img"
+                      height="200"
+                      image={`${process.env.REACT_APP_API_URL || '/api'}/persons/${result.person_id}/image`}
+                      alt={result.person_name}
+                      onError={(e: any) => {
+                        e.target.onerror = null;
+                        e.target.src = 'https://via.placeholder.com/300x200?text=Imagem+não+disponível';
+                      }}
+                      sx={{
+                        objectFit: 'contain', // Mudar de 'cover' para 'contain'
+                        objectPosition: 'center', // Mudar de 'center top' para 'center'
+                        backgroundColor: '#f5f5f5' // Adicionar um fundo para melhor visualização
+                      }}
+                    />
+                    <CardContent sx={{ flexGrow: 1 }}>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+                        <Typography variant="h6" component="div" sx={{ fontWeight: 'medium' }}>
+                          {result.person_name}
+                        </Typography>
+                        {shouldShowSimilarity(searchMethod) && (
+                          <Chip
+                            label={`${(result.similarity * 100).toFixed(1)}%`}
+                            color={result.similarity >= 0.9 ? "success" :
+                              result.similarity >= 0.8 ? "primary" :
+                                result.similarity >= 0.7 ? "warning" : "error"}
+                            size="small"
+                            sx={{
+                              fontWeight: 'bold',
+                              ml: 1
+                            }}
+                          />
+                        )}
+                      </Box>
+                      <Stack spacing={1} sx={{ mt: 2 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                          <BadgeIcon fontSize="small" sx={{ color: 'text.secondary', mr: 1 }} />
+                          <Typography variant="body2" color="text.secondary">
+                            <strong>RG:</strong> {result.person_id}
+                          </Typography>
+                        </Box>
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                          <CreditCardIcon fontSize="small" sx={{ color: 'text.secondary', mr: 1 }} />
+                          <Typography variant="body2" color="text.secondary">
+                            <strong>CPF:</strong> {result.cpf}
+                          </Typography>
+                        </Box>
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                          <FaceIcon fontSize="small" sx={{ color: 'text.secondary', mr: 1 }} />
+                          <Typography variant="body2" color="text.secondary">
+                            <strong>Origem:</strong> {result.origin}
+                          </Typography>
+                        </Box>
+                      </Stack>
+                      {shouldShowSimilarity(searchMethod) && (
+                        <Box sx={{ mt: 3 }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <Typography variant="body2" color="text.secondary">Similaridade:</Typography>
+                            <Typography variant="body2" fontWeight="medium" sx={{
+                              color: getSimilarityColor(result.similarity)
+                            }}>
+                              {(result.similarity * 100).toFixed(1)}%
+                            </Typography>
+                          </Box>
+                          <Box sx={{ mt: 1 }}>
+                            <LinearProgress
+                              variant="determinate"
+                              value={result.similarity * 100}
+                              color={result.similarity >= 0.9 ? "success" :
+                                result.similarity >= 0.8 ? "primary" :
+                                  result.similarity >= 0.7 ? "warning" : "error"}
+                              sx={{
+                                height: 8,
+                                borderRadius: 4,
+                                backgroundColor: 'rgba(0,0,0,0.05)'
+                              }}
+                            />
+                          </Box>
+                        </Box>
+                      )}
+                    </CardContent>
+                    <Divider />
+                    <CardActions sx={{ p: 2, justifyContent: 'center' }}>
+                      <Button
+                        size="medium"
+                        color="primary"
+                        variant="contained"
+                        onClick={(e) => {
+                          e.stopPropagation(); // Impedir que o clique do botão também acione o clique do card
+                          handleOpenDetails(result);
+                        }}
+                        startIcon={<PhotoLibraryIcon />}
+                        sx={{
+                          borderRadius: 8,
+                          px: 2
+                        }}
+                      >
+                        Ver Detalhes
+                      </Button>
+                    </CardActions>
+                  </Card>
+                </Grid>
+              ))}
+          </Grid>
+          {/* Adicionar este bloco para mostrar mensagem quando não há resultados após filtro */}
+          {searchMethod === 0 &&
+            similarityThreshold !== null &&
+            results.filter(result => result.similarity >= similarityThreshold).length === 0 && (
+              <Alert
+                severity="info"
+                sx={{
+                  mt: 3,
+                  borderRadius: 2,
+                  boxShadow: '0 2px 8px rgba(33, 150, 243, 0.2)'
+                }}
+                variant="filled"
+              >
+                Nenhum resultado atende ao critério de similaridade mínima de {similarityThreshold * 100}%.
+              </Alert>
+            )}
+        </Box>
+      )}
+
+      {/* Modal de detalhes com suporte a múltiplas imagens */}
+      <Dialog
+        open={detailsOpen}
+        onClose={() => setDetailsOpen(false)}
+        maxWidth="md"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 2,
+            overflow: 'hidden'
+          }
+        }}
+      >
+        <DialogTitle sx={{
+          bgcolor: theme.palette.primary.main,
+          color: 'white',
+          py: 2
+        }}>
+          {selectedResult && (
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              <PersonIcon sx={{ mr: 1 }} />
+              <Typography variant="h6">Detalhes de {selectedResult.person_name}</Typography>
+            </Box>
+          )}
+        </DialogTitle>
+        <DialogContent dividers sx={{ p: 0 }}>
+          {selectedResult && (
+            <Grid container>
+              <Grid item xs={12} md={6} sx={{
+                bgcolor: 'rgba(0,0,0,0.02)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                p: 3
+              }}>
+                {loadingImages ? (
+                  <Box sx={{
                     display: 'flex',
                     flexDirection: 'column',
-                    borderRadius: 2,
-                    overflow: 'hidden',
-                    transition: 'transform 0.2s, box-shadow 0.2s',
-                    cursor: 'pointer', // Adicionar cursor de ponteiro para indicar que é clicável
-                    '&:hover': {
-                      transform: 'translateY(-4px)',
-                      boxShadow: '0 12px 24px rgba(0,0,0,0.1)'
-                    }
-                  }}
-                  onClick={() => handleOpenDetails(result)} // Adicionar o evento de clique aqui
-                >
-                  <CardMedia
-                    component="img"
-                    height="200"
-                    image={`${process.env.REACT_APP_API_URL || '/api'}/persons/${result.person_id}/image`}
-                    alt={result.person_name}
-                    onError={(e: any) => {
-                      e.target.onerror = null;
-                      e.target.src = 'https://via.placeholder.com/300x200?text=Imagem+não+disponível';
-                    }}
-                    sx={{
-                      objectFit: 'contain', // Mudar de 'cover' para 'contain'
-                      objectPosition: 'center', // Mudar de 'center top' para 'center'
-                      backgroundColor: '#f5f5f5' // Adicionar um fundo para melhor visualização
-                    }}
-                  />
-                  <CardContent sx={{ flexGrow: 1 }}>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
-                      <Typography variant="h6" component="div" sx={{ fontWeight: 'medium' }}>
-                        {result.person_name}
-                      </Typography>
-                      {shouldShowSimilarity(searchMethod) && (
-                        <Chip
-                          label={`${(result.similarity * 100).toFixed(1)}%`}
-                                        color={result.similarity >= 0.9 ? "success" :
-                                            result.similarity >= 0.8 ? "primary" :
-                                                result.similarity >= 0.7 ? "warning" : "error"}
-                                        size="small"
-                                        sx={{
-                                            fontWeight: 'bold',
-                                            ml: 1
-                                        }}
-                                    />
-                                )}
-                            </Box>
-
-                            <Stack spacing={1} sx={{ mt: 2 }}>
-                                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                    <BadgeIcon fontSize="small" sx={{ color: 'text.secondary', mr: 1 }} />
-                                    <Typography variant="body2" color="text.secondary">
-                                        <strong>RG:</strong> {result.person_id}
-                                    </Typography>
-                                </Box>
-                                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                    <CreditCardIcon fontSize="small" sx={{ color: 'text.secondary', mr: 1 }} />
-                                    <Typography variant="body2" color="text.secondary">
-                                        <strong>CPF:</strong> {result.cpf}
-                                    </Typography>
-                                </Box>
-                                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                    <FaceIcon fontSize="small" sx={{ color: 'text.secondary', mr: 1 }} />
-                                    <Typography variant="body2" color="text.secondary">
-                                        <strong>Origem:</strong> {result.origin}
-                                    </Typography>
-                                </Box>
-                            </Stack>
-
-                            {shouldShowSimilarity(searchMethod) && (
-                                <Box sx={{ mt: 3 }}>
-                                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                        <Typography variant="body2" color="text.secondary">Similaridade:</Typography>
-                                        <Typography variant="body2" fontWeight="medium" sx={{
-                                            color: getSimilarityColor(result.similarity)
-                                        }}>
-                                            {(result.similarity * 100).toFixed(1)}%
-                                        </Typography>
-                                    </Box>
-                                    <Box sx={{ mt: 1 }}>
-                                        <LinearProgress
-                                            variant="determinate"
-                                            value={result.similarity * 100}
-                                            color={result.similarity >= 0.9 ? "success" :
-                                                result.similarity >= 0.8 ? "primary" :
-                                                    result.similarity >= 0.7 ? "warning" : "error"}
-                                            sx={{
-                                                height: 8,
-                                                borderRadius: 4,
-                                                backgroundColor: 'rgba(0,0,0,0.05)'
-                                            }}
-                                        />
-                                    </Box>
-                                </Box>
-                            )}
-                        </CardContent>
-                        <Divider />
-                        <CardActions sx={{ p: 2, justifyContent: 'center' }}>
-                            <Button
-                                size="medium"
-                                color="primary"
-                                variant="contained"
-                                onClick={(e) => {
-                                    e.stopPropagation(); // Impedir que o clique do botão também acione o clique do card
-                                    handleOpenDetails(result);
-                                }}
-                                startIcon={<PhotoLibraryIcon />}
-                                sx={{
-                                    borderRadius: 8,
-                                    px: 2
-                                }}
-                            >
-                                Ver Detalhes
-                            </Button>
-                        </CardActions>
-                    </Card>
-                </Grid>
-            ))}
-                    </Grid>
-                </Box>
-            )}
-
-            {/* Modal de detalhes com suporte a múltiplas imagens */}
-            <Dialog
-                open={detailsOpen}
-                onClose={() => setDetailsOpen(false)}
-                maxWidth="md"
-                fullWidth
-                PaperProps={{
-                    sx: {
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    height: '300px'
+                  }}>
+                    <CircularProgress size={40} sx={{ mb: 2 }} />
+                    <Typography variant="body2" color="text.secondary">Carregando imagens...</Typography>
+                  </Box>
+                ) : personImages.length > 0 ? (
+                  <Box sx={{ position: 'relative', width: '100%' }}>
+                    <Paper
+                      elevation={4}
+                      sx={{
+                        overflow: 'hidden',
                         borderRadius: 2,
-                        overflow: 'hidden'
-                    }
-                }}
-            >
-                <DialogTitle sx={{
-                    bgcolor: theme.palette.primary.main,
-                    color: 'white',
-                    py: 2
-                }}>
-                    {selectedResult && (
-                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                            <PersonIcon sx={{ mr: 1 }} />
-                            <Typography variant="h6">Detalhes de {selectedResult.person_name}</Typography>
-                        </Box>
-                    )}
-                </DialogTitle>
-                <DialogContent dividers sx={{ p: 0 }}>
-                    {selectedResult && (
-                        <Grid container>
-                            <Grid item xs={12} md={6} sx={{
-                                bgcolor: 'rgba(0,0,0,0.02)',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                p: 3
-                            }}>
-                                {loadingImages ? (
-                                    <Box sx={{
-                                        display: 'flex',
-                                        flexDirection: 'column',
-                                        justifyContent: 'center',
-                                        alignItems: 'center',
-                                        height: '300px'
-                                    }}>
-                                        <CircularProgress size={40} sx={{ mb: 2 }} />
-                                        <Typography variant="body2" color="text.secondary">Carregando imagens...</Typography>
-                                    </Box>
-                                ) : personImages.length > 0 ? (
-                                    <Box sx={{ position: 'relative', width: '100%' }}>
-                                        <Paper
-                                            elevation={4}
-                                            sx={{
-                                                overflow: 'hidden',
-                                                borderRadius: 2,
-                                                position: 'relative'
-                                            }}
-                                        >
-                                            <Box
-                                                component="img"
-                                                src={`${process.env.REACT_APP_API_URL || '/api'}/persons/${selectedResult.person_id}/image?image_id=${personImages[currentImageIndex].id}`}
-                                                alt={selectedResult.person_name}
-                                                sx={{
-                                                    width: '100%',
-                                                    height: 400,
-                                                    objectFit: 'contain',
-                                                    backgroundColor: '#f5f5f5'
-                                                }}
-                                                onError={(e: any) => {
-                                                    e.target.onerror = null;
-                                                    e.target.src = 'https://via.placeholder.com/300x400?text=Imagem+não+disponível';
-                                                }}
-                                            />
-                                        </Paper>
-                                        {personImages.length > 1 && (
-                                            <Box sx={{
-                                                display: 'flex',
-                                                justifyContent: 'space-between',
-                                                alignItems: 'center',
-                                                mt: 2,
-                                                px: 2
-                                            }}>
-                                                <IconButton
-                                                    onClick={handlePrevImage}
-                                                    disabled={currentImageIndex === 0}
-                                                    sx={{
-                                                        bgcolor: 'white',
-                                                        boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
-                                                        '&:hover': {
-                                                            bgcolor: 'white',
-                                                            boxShadow: '0 4px 14px rgba(0,0,0,0.15)'
-                                                        },
-                                                        '&.Mui-disabled': {
-                                                            bgcolor: 'rgba(255,255,255,0.7)'
-                                                        }
-                                                    }}
-                                                >
-                                                    <ArrowBackIcon />
-                                                </IconButton>
-                                                <Chip
-                                                    label={`${currentImageIndex + 1} de ${personImages.length}`}
-                                                    color="primary"
-                                                    variant="outlined"
-                                                />
-                                                <IconButton
-                                                    onClick={handleNextImage}
-                                                    disabled={currentImageIndex === personImages.length - 1}
-                                                    sx={{
-                                                        bgcolor: 'white',
-                                                        boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
-                                                        '&:hover': {
-                                                            bgcolor: 'white',
-                                                            boxShadow: '0 4px 14px rgba(0,0,0,0.15)'
-                                                        },
-                                                        '&.Mui-disabled': {
-                                                            bgcolor: 'rgba(255,255,255,0.7)'
-                                                        }
-                                                    }}
-                                                >
-                                                    <ArrowForwardIcon />
-                                                </IconButton>
-                                            </Box>
-                                        )}
-                                    </Box>
-                                ) : (
-                                    <Paper
-                                        elevation={4}
-                                        sx={{
-                                            overflow: 'hidden',
-                                            borderRadius: 2
-                                        }}
-                                    >
-                                        <Box
-                                            component="img"
-                                            src={`${process.env.REACT_APP_API_URL || '/api'}/persons/${selectedResult.person_id}/image`}
-                                            alt={selectedResult.person_name}
-                                            sx={{
-                                                width: '100%',
-                                                height: 400,
-                                                objectFit: 'contain',
-                                                backgroundColor: '#f5f5f5'
-                                            }}
-                                            onError={(e: any) => {
-                                                e.target.onerror = null;
-                                                e.target.src = 'https://via.placeholder.com/300x400?text=Imagem+não+disponível';
-                                            }}
-                                        />
-                                    </Paper>
-                                )}
-                            </Grid>
-                            <Grid item xs={12} md={6}>
-                                <Box sx={{ p: 4 }}>
-                                    <Typography variant="h5" gutterBottom color="primary.main" sx={{ fontWeight: 'bold' }}>
-                                        {selectedResult.person_name}
-                                    </Typography>
-                                    <Divider sx={{ my: 2 }} />
-                                    <Stack spacing={2} sx={{ mt: 3 }}>
-                                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                            <Avatar sx={{ bgcolor: theme.palette.primary.light, mr: 2 }}>
-                                                <BadgeIcon />
-                                            </Avatar>
-                                            <Box>
-                                                <Typography variant="body2" color="text.secondary">RG</Typography>
-                                                <Typography variant="body1" fontWeight="medium">{selectedResult.person_id}</Typography>
-                                            </Box>
-                                        </Box>
-                                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                            <Avatar sx={{ bgcolor: theme.palette.primary.light, mr: 2 }}>
-                                                <CreditCardIcon />
-                                            </Avatar>
-                                            <Box>
-                                                <Typography variant="body2" color="text.secondary">CPF</Typography>
-                                                <Typography variant="body1" fontWeight="medium">{selectedResult.cpf}</Typography>
-                                            </Box>
-                                        </Box>
-                                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                            <Avatar sx={{ bgcolor: theme.palette.primary.light, mr: 2 }}>
-                                                <FaceIcon />
-                                            </Avatar>
-                                            <Box>
-                                                <Typography variant="body2" color="text.secondary">Origem</Typography>
-                                                <Typography variant="body1" fontWeight="medium">{selectedResult.origin}</Typography>
-                                            </Box>
-                                        </Box>
-                                        {personImages.length > 0 && (
-                                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                                <Avatar sx={{ bgcolor: theme.palette.primary.light, mr: 2 }}>
-                                                    <PhotoLibraryIcon />
-                                                </Avatar>
-                                                <Box>
-                                                    <Typography variant="body2" color="text.secondary">Total de imagens</Typography>
-                                                    <Typography variant="body1" fontWeight="medium">{personImages.length}</Typography>
-                                                </Box>
-                                            </Box>
-                                        )}
-                                    </Stack>
-
-                                    {shouldShowSimilarity(searchMethod) && (
-                                        <Paper
-                                            elevation={0}
-                                            sx={{
-                                                mt: 4,
-                                                p: 2,
-                                                bgcolor: 'rgba(0,0,0,0.02)',
-                                                borderRadius: 2,
-                                                border: '1px solid rgba(0,0,0,0.05)'
-                                            }}
-                                        >
-                                            <Typography variant="subtitle2" gutterBottom>Nível de Similaridade</Typography>
-                                            <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
-                                                <Box sx={{ width: '100%', mr: 2 }}>
-                                                    <LinearProgress
-                                                        variant="determinate"
-                                                        value={selectedResult.similarity * 100}
-                                                        color={selectedResult.similarity >= 0.9 ? "success" :
-                                                            selectedResult.similarity >= 0.8 ? "primary" :
-                                                                selectedResult.similarity >= 0.7 ? "warning" : "error"}
-                                                        sx={{ height: 10, borderRadius: 5 }}
-                                                    />
-                                                </Box>
-                                                <Typography
-                                                    variant="h6"
-                                                    sx={{
-                                                        color: getSimilarityColor(selectedResult.similarity),
-                                                        fontWeight: 'bold'
-                                                    }}
-                                                >
-                                                    {(selectedResult.similarity * 100).toFixed(1)}%
-                                                </Typography>
-                                            </Box>
-                                        </Paper>
-                                    )}
-                                </Box>
-                            </Grid>
-                        </Grid>
-                    )}
-                </DialogContent>
-                <DialogActions sx={{ p: 2, bgcolor: 'rgba(0,0,0,0.02)' }}>
-                    <Button
-                        onClick={() => setDetailsOpen(false)}
-                        variant="outlined"
-                        color="primary"
-                        sx={{ borderRadius: 8, px: 3 }}
+                        position: 'relative'
+                      }}
                     >
-                        Fechar
-                    </Button>
-                </DialogActions>
-            </Dialog>
-        </Container>
-    );
+                      <Box
+                        component="img"
+                        src={`${process.env.REACT_APP_API_URL || '/api'}/persons/${selectedResult.person_id}/image?image_id=${personImages[currentImageIndex].id}`}
+                        alt={selectedResult.person_name}
+                        sx={{
+                          width: '100%',
+                          height: 400,
+                          objectFit: 'contain',
+                          backgroundColor: '#f5f5f5'
+                        }}
+                        onError={(e: any) => {
+                          e.target.onerror = null;
+                          e.target.src = 'https://via.placeholder.com/300x400?text=Imagem+não+disponível';
+                        }}
+                      />
+                    </Paper>
+                    {personImages.length > 1 && (
+                      <Box sx={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        mt: 2,
+                        px: 2
+                      }}>
+                        <IconButton
+                          onClick={handlePrevImage}
+                          disabled={currentImageIndex === 0}
+                          sx={{
+                            bgcolor: 'white',
+                            boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
+                            '&:hover': {
+                              bgcolor: 'white',
+                              boxShadow: '0 4px 14px rgba(0,0,0,0.15)'
+                            },
+                            '&.Mui-disabled': {
+                              bgcolor: 'rgba(255,255,255,0.7)'
+                            }
+                          }}
+                        >
+                          <ArrowBackIcon />
+                        </IconButton>
+                        <Chip
+                          label={`${currentImageIndex + 1} de ${personImages.length}`}
+                          color="primary"
+                          variant="outlined"
+                        />
+                        <IconButton
+                          onClick={handleNextImage}
+                          disabled={currentImageIndex === personImages.length - 1}
+                          sx={{
+                            bgcolor: 'white',
+                            boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
+                            '&:hover': {
+                              bgcolor: 'white',
+                              boxShadow: '0 4px 14px rgba(0,0,0,0.15)'
+                            },
+                            '&.Mui-disabled': {
+                              bgcolor: 'rgba(255,255,255,0.7)'
+                            }
+                          }}
+                        >
+                          <ArrowForwardIcon />
+                        </IconButton>
+                      </Box>
+                    )}
+                  </Box>
+                ) : (
+                  <Paper
+                    elevation={4}
+                    sx={{
+                      overflow: 'hidden',
+                      borderRadius: 2
+                    }}
+                  >
+                    <Box
+                      component="img"
+                      src={`${process.env.REACT_APP_API_URL || '/api'}/persons/${selectedResult.person_id}/image`}
+                      alt={selectedResult.person_name}
+                      sx={{
+                        width: '100%',
+                        height: 400,
+                        objectFit: 'contain',
+                        backgroundColor: '#f5f5f5'
+                      }}
+                      onError={(e: any) => {
+                        e.target.onerror = null;
+                        e.target.src = 'https://via.placeholder.com/300x400?text=Imagem+não+disponível';
+                      }}
+                    />
+                  </Paper>
+                )}
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <Box sx={{ p: 4 }}>
+                  <Typography variant="h5" gutterBottom color="primary.main" sx={{ fontWeight: 'bold' }}>
+                    {selectedResult.person_name}
+                  </Typography>
+                  <Divider sx={{ my: 2 }} />
+                  <Stack spacing={2} sx={{ mt: 3 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                      <Avatar sx={{ bgcolor: theme.palette.primary.light, mr: 2 }}>
+                        <BadgeIcon />
+                      </Avatar>
+                      <Box>
+                        <Typography variant="body2" color="text.secondary">RG</Typography>
+                        <Typography variant="body1" fontWeight="medium">{selectedResult.person_id}</Typography>
+                      </Box>
+                    </Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                      <Avatar sx={{ bgcolor: theme.palette.primary.light, mr: 2 }}>
+                        <CreditCardIcon />
+                      </Avatar>
+                      <Box>
+                        <Typography variant="body2" color="text.secondary">CPF</Typography>
+                        <Typography variant="body1" fontWeight="medium">{selectedResult.cpf}</Typography>
+                      </Box>
+                    </Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                      <Avatar sx={{ bgcolor: theme.palette.primary.light, mr: 2 }}>
+                        <FaceIcon />
+                      </Avatar>
+                      <Box>
+                        <Typography variant="body2" color="text.secondary">Origem</Typography>
+                        <Typography variant="body1" fontWeight="medium">{selectedResult.origin}</Typography>
+                      </Box>
+                    </Box>
+                    {personImages.length > 0 && (
+                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                        <Avatar sx={{ bgcolor: theme.palette.primary.light, mr: 2 }}>
+                          <PhotoLibraryIcon />
+                        </Avatar>
+                        <Box>
+                          <Typography variant="body2" color="text.secondary">Total de imagens</Typography>
+                          <Typography variant="body1" fontWeight="medium">{personImages.length}</Typography>
+                        </Box>
+                      </Box>
+                    )}
+                  </Stack>
+                  {shouldShowSimilarity(searchMethod) && (
+                    <Paper
+                      elevation={0}
+                      sx={{
+                        mt: 4,
+                        p: 2,
+                        bgcolor: 'rgba(0,0,0,0.02)',
+                        borderRadius: 2,
+                        border: '1px solid rgba(0,0,0,0.05)'
+                      }}
+                    >
+                      <Typography variant="subtitle2" gutterBottom>Nível de Similaridade</Typography>
+                      <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
+                        <Box sx={{ width: '100%', mr: 2 }}>
+                          <LinearProgress
+                            variant="determinate"
+                            value={selectedResult.similarity * 100}
+                            color={selectedResult.similarity >= 0.9 ? "success" :
+                              selectedResult.similarity >= 0.8 ? "primary" :
+                                selectedResult.similarity >= 0.7 ? "warning" : "error"}
+                            sx={{ height: 10, borderRadius: 5 }}
+                          />
+                        </Box>
+                        <Typography
+                          variant="h6"
+                          sx={{
+                            fontWeight: 'bold',
+                            color: getSimilarityColor(selectedResult.similarity)
+                          }}
+                        >
+                          {(selectedResult.similarity * 100).toFixed(1)}%
+                        </Typography>
+                      </Box>
+                      <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                        {selectedResult.similarity >= 0.9
+                          ? 'Similaridade muito alta - Alta probabilidade de ser a mesma pessoa'
+                          : selectedResult.similarity >= 0.8
+                            ? 'Similaridade alta - Provável que seja a mesma pessoa'
+                            : selectedResult.similarity >= 0.7
+                              ? 'Similaridade média - Possibilidade de ser a mesma pessoa'
+                              : 'Similaridade baixa - Baixa probabilidade de ser a mesma pessoa'}
+                      </Typography>
+                    </Paper>
+                  )}
+                </Box>
+              </Grid>
+            </Grid>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ p: 2, bgcolor: 'rgba(0,0,0,0.02)' }}>
+          <Button
+            onClick={() => setDetailsOpen(false)}
+            variant="outlined"
+            startIcon={<CloseIcon />}
+          >
+            Fechar
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </Container>
+  );
 };
 
 export default Search;
