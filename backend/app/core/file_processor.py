@@ -104,6 +104,8 @@ class FileProcessor:
             
             # Formatar RG (apenas remover zeros à esquerda desnecessários)
             person_id = person_id_raw.lstrip('0')
+            if person_id == "":  # Se sobrar string vazia após remover zeros à esquerda
+                person_id = "00000000000"  # Usar 11 zeros
             
             # Formatar nome (substituir underscores por espaços)
             person_name = person_name_raw.replace('_', ' ')
