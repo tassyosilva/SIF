@@ -7,7 +7,7 @@ import uuid
 from ...database import get_db
 from ...schemas.person import SearchResponse
 from ...config import settings
-from ...models.person import Person
+from ...models.person import Person, PersonImage
 
 router = APIRouter()
 
@@ -53,9 +53,7 @@ def search_by_person_id(
     k: int = Query(5, description="Número de resultados a retornar"),
     db: Session = Depends(get_db)
 ):
-    """
-    Busca diretamente uma pessoa pelo seu ID (RG).
-    """
+    """Busca diretamente uma pessoa pelo seu ID (RG)."""
     # Buscar a pessoa no banco de dados
     person = db.query(Person).filter(Person.person_id == person_id).first()
     if not person:
@@ -64,25 +62,24 @@ def search_by_person_id(
             "message": "RG não encontrado no sistema.",
             "results": []
         }
-    
-    # Buscar a imagem mais recente desta pessoa
-    from ...models.person import PersonImage
+
+    # Buscar a imagem mais recente desta pessoa usando registro_unico
     latest_image = db.query(PersonImage).filter(
-        PersonImage.person_id == person.person_id
+        PersonImage.registro_unico == person.registro_unico
     ).order_by(PersonImage.processed_date.desc()).first()
-    
+
     if not latest_image or not latest_image.file_path or not os.path.exists(latest_image.file_path):
         return {
             "success": False,
             "message": "Imagem da pessoa não encontrada no sistema.",
             "results": []
         }
-    
+
     # Criar um resultado com similaridade 1.0 (correspondência exata)
     result = {
         "rank": 1,
-        "distance": 0.0,  # Distância zero (correspondência exata)
-        "similarity": 1.0,  # Similaridade máxima
+        "distance": 0.0, # Distância zero (correspondência exata)
+        "similarity": 1.0, # Similaridade máxima
         "person_id": person.person_id,
         "cpf": person.cpf,
         "person_name": person.name,
@@ -90,7 +87,7 @@ def search_by_person_id(
         "filename": latest_image.filename,
         "processed_date": latest_image.processed_date.isoformat() if latest_image.processed_date else ""
     }
-    
+
     return {
         "success": True,
         "query_image": latest_image.filename,
@@ -115,10 +112,9 @@ def search_by_cpf(
             "results": []
         }
     
-    # Buscar a imagem mais recente desta pessoa
-    from ...models.person import PersonImage
+    # Buscar a imagem mais recente desta pessoa usando registro_unico
     latest_image = db.query(PersonImage).filter(
-        PersonImage.person_id == person.person_id
+        PersonImage.registro_unico == person.registro_unico
     ).order_by(PersonImage.processed_date.desc()).first()
     
     if not latest_image or not latest_image.file_path or not os.path.exists(latest_image.file_path):
@@ -127,7 +123,7 @@ def search_by_cpf(
             "message": "Imagem da pessoa não encontrada no sistema.",
             "results": []
         }
-    
+
     # Criar um resultado com similaridade 1.0 (correspondência exata)
     result = {
         "rank": 1,
@@ -140,7 +136,7 @@ def search_by_cpf(
         "filename": latest_image.filename,
         "processed_date": latest_image.processed_date.isoformat() if latest_image.processed_date else ""
     }
-    
+
     return {
         "success": True,
         "query_image": latest_image.filename,
@@ -153,9 +149,7 @@ def search_by_name(
     k: int = Query(25, description="Número de resultados a retornar"),
     db: Session = Depends(get_db)
 ):
-    """
-    Busca pessoas pelo nome.
-    """
+    """Busca pessoas pelo nome."""
     # Buscar pessoas no banco de dados (usando LIKE para correspondência parcial)
     persons = db.query(Person).filter(Person.name.ilike(f"%{name}%")).limit(k).all()
     if not persons:
@@ -164,15 +158,15 @@ def search_by_name(
             "message": "Nome não encontrado no sistema.",
             "results": []
         }
-    
+
     results = []
     # Para cada pessoa encontrada, buscar a imagem mais recente
     for i, person in enumerate(persons):
-        from ...models.person import PersonImage
+        # Buscar a imagem mais recente desta pessoa usando registro_unico
         latest_image = db.query(PersonImage).filter(
-            PersonImage.person_id == person.person_id
+            PersonImage.registro_unico == person.registro_unico
         ).order_by(PersonImage.processed_date.desc()).first()
-            
+        
         if latest_image and latest_image.file_path and os.path.exists(latest_image.file_path):
             # Adicionar à lista de resultados
             results.append({
@@ -186,16 +180,16 @@ def search_by_name(
                 "filename": latest_image.filename,
                 "processed_date": latest_image.processed_date.isoformat() if latest_image.processed_date else ""
             })
-    
+
     if not results:
         return {
             "success": False,
             "message": "Imagens das pessoas não encontradas no sistema.",
             "results": []
         }
-    
+
     return {
         "success": True,
-        "query_image": "",  # Não há imagem de consulta
+        "query_image": "", # Não há imagem de consulta
         "results": results
     }
