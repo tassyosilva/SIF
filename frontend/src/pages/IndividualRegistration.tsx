@@ -85,7 +85,7 @@ const compressImage = (file: File): Promise<File> => {
                         lastModified: Date.now()
                     });
                     resolve(compressedFile);
-                }, 'image/jpeg', 0.7);  // Qualidade 0.7 (70%)
+                }, 'image/jpeg', 0.7); // Qualidade 0.7 (70%)
             };
         };
         reader.onerror = (error) => reject(error);
@@ -114,12 +114,9 @@ const IndividualRegistration = () => {
         if (event.target.files && event.target.files[0]) {
             try {
                 const selectedFile = event.target.files[0];
-
                 // Comprimir a imagem
                 const compressedFile = await compressImage(selectedFile);
-
                 setFile(compressedFile);
-
                 const fileUrl = URL.createObjectURL(compressedFile);
                 setPreviewUrl(fileUrl);
             } catch (err) {
@@ -137,7 +134,7 @@ const IndividualRegistration = () => {
         const cleanCpf = unformatCPF(cpf);
         const cleanRg = rg.padStart(11, '0');
         const cleanName = name.toUpperCase().replace(/\s+/g, '_');
-        const fileExt = 'jpg';  // Forçar extensão jpg após compressão
+        const fileExt = 'jpg'; // Forçar extensão jpg após compressão
 
         return `${origin}${cleanCpf}${cleanRg}${cleanName}.${fileExt}`;
     };
@@ -171,12 +168,11 @@ const IndividualRegistration = () => {
             // Criar um novo arquivo com o nome gerado
             const newFilename = generateFilename();
             const renamedFile = new File([file], newFilename, { type: 'image/jpeg' });
-
-            const result = await uploadImage(renamedFile);
+            // Agora passamos true para permitir duplicatas
+            const result = await uploadImage(renamedFile, true);
 
             if (result.success) {
                 setSuccess('Pessoa cadastrada com sucesso!');
-
                 // Limpar formulário
                 setName('');
                 setRg('');
@@ -201,7 +197,6 @@ const IndividualRegistration = () => {
 
     return (
         <Container maxWidth="lg" sx={{ py: 4 }}>
-
             <Paper
                 elevation={3}
                 sx={{
@@ -328,6 +323,7 @@ const IndividualRegistration = () => {
                                             onChange={handleFileChange}
                                         />
                                     </Button>
+
                                     {file && (
                                         <Box sx={{
                                             mt: 1,
@@ -377,9 +373,7 @@ const IndividualRegistration = () => {
                                         <Avatar sx={{ bgcolor: 'white', color: 'primary.main', mr: 1.5 }}>
                                             <PersonIcon />
                                         </Avatar>
-                                        <Typography variant="subtitle1">
-                                            Preview da Imagem
-                                        </Typography>
+                                        <Typography variant="subtitle1">Preview da Imagem</Typography>
                                     </Box>
 
                                     <CardContent sx={{

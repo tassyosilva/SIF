@@ -119,10 +119,11 @@ export const deletePerson = async (personId: string) => {
     return response.data;
 };
 
-// Fazer upload de uma imagem
-export const uploadImage = async (file: File) => {
+// Fazer upload de uma imagem - com opção de permitir duplicatas
+export const uploadImage = async (file: File, allowDuplicates: boolean = false) => {
     const formData = new FormData();
     formData.append('file', file);
+    formData.append('allow_duplicates', allowDuplicates.toString());
     const response = await api.post<UploadResponse>('/persons/upload/', formData, {
         headers: {
             'Content-Type': 'multipart/form-data',
