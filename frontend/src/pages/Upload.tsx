@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import {
     Box,
     Typography,
@@ -92,7 +92,6 @@ const Upload = () => {
     const [success, setSuccess] = useState<string | null>(null);
     const [selectedFile, setSelectedFile] = useState<UploadedFile | null>(null);
     const [detailsOpen, setDetailsOpen] = useState(false);
-
     // Novos estados para otimização
     const [currentPage, setCurrentPage] = useState(1);
     const [tabValue, setTabValue] = useState(0);
@@ -103,6 +102,8 @@ const Upload = () => {
         failed: 0,
         overallProgress: 0
     });
+    // Novo estado para o filtro de resultados
+    const [resultFilter, setResultFilter] = useState<'all' | 'success' | 'failed'>('all');
 
     // Calcular arquivos paginados
     const paginatedFiles = useCallback(() => {
@@ -110,6 +111,34 @@ const Upload = () => {
         const endIndex = startIndex + ITEMS_PER_PAGE;
         return files.slice(startIndex, endIndex);
     }, [files, currentPage]);
+
+    // Calcular arquivos filtrados e paginados
+    const getFilteredFiles = useCallback(() => {
+        let filtered = [...files];
+
+        if (resultFilter === 'success') {
+            filtered = filtered.filter(f => f.status === 'success');
+        } else if (resultFilter === 'failed') {
+            filtered = filtered.filter(f => f.status === 'error');
+        }
+
+        const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+        const endIndex = startIndex + ITEMS_PER_PAGE;
+        return filtered.slice(startIndex, endIndex);
+    }, [files, currentPage, resultFilter]);
+
+    // Calcular o total de páginas após a filtragem
+    const totalFilteredPages = useMemo(() => {
+        let count = files.length;
+
+        if (resultFilter === 'success') {
+            count = files.filter(f => f.status === 'success').length;
+        } else if (resultFilter === 'failed') {
+            count = files.filter(f => f.status === 'error').length;
+        }
+
+        return Math.ceil(count / ITEMS_PER_PAGE);
+    }, [files, resultFilter]);
 
     // Atualizar o progresso geral
     useEffect(() => {
@@ -145,7 +174,6 @@ const Upload = () => {
             status: 'pending' as const,
             progress: 0,
         }));
-
         setFiles(prev => [...prev, ...newFiles]);
     }, []);
 
@@ -183,7 +211,6 @@ const Upload = () => {
                 URL.revokeObjectURL(file.preview);
             }
         });
-
         setFiles([]);
         setActiveStep(0);
         setError(null);
@@ -207,6 +234,13 @@ const Upload = () => {
 
     const handlePageChange = (event: React.ChangeEvent<unknown>, value: number) => {
         setCurrentPage(value);
+    };
+
+    // Função para alternar o filtro ao clicar no card
+    const toggleResultFilter = (filter: 'all' | 'success' | 'failed') => {
+        // Se o filtro atual já está aplicado, voltar para 'all'
+        setResultFilter(prevFilter => prevFilter === filter ? 'all' : filter);
+        setCurrentPage(1); // Resetar para a primeira página ao trocar o filtro
     };
 
     const uploadFiles = async () => {
@@ -243,22 +277,18 @@ const Upload = () => {
 
                     // Processar resultado da API
                     clearInterval(progressInterval);
-
                     if (result.success) {
                         file.status = 'success';
                         file.progress = 100;
-
                         // Estruturar os dados conforme a expectativa do componente
                         file.result = {
                             ...result.person,
                             // O backend não retorna esses valores diretamente no objeto person,
                             // mas sabemos que se o upload foi bem-sucedido, a face foi detectada
                             face_detected: true,
-
                             // Extrair CPF do nome do arquivo, já que não está vindo na resposta
                             cpf: extrairCpfDoNomeArquivo(file.file.name) || "Não disponível"
                         };
-
                         results.push({
                             filename: file.file.name,
                             success: true,
@@ -288,7 +318,6 @@ const Upload = () => {
                 } finally {
                     processedCount++;
                     setFiles([...updatedFiles]);
-
                     // Atualizar o status periodicamente (a cada 10 arquivos ou no final)
                     if (processedCount % 10 === 0 || processedCount === updatedFiles.length) {
                         const successCount = results.filter(r => r.success).length;
@@ -299,7 +328,6 @@ const Upload = () => {
 
             const successCount = results.filter(r => r.success).length;
             setSuccess(`${successCount} de ${results.length} arquivos enviados com sucesso`);
-
             handleNext();
         } catch (err: any) {
             console.error('Erro no upload:', err);
@@ -314,7 +342,6 @@ const Upload = () => {
         if (!file.preview && file.file) {
             file.preview = URL.createObjectURL(file.file);
         }
-
         setSelectedFile(file);
         setDetailsOpen(true);
     };
@@ -324,10 +351,7 @@ const Upload = () => {
 
     return (
         <Box>
-            <Typography variant="h4" gutterBottom>
-                Upload de Imagens
-            </Typography>
-
+            <Typography variant="h4" gutterBottom>Upload de Imagens</Typography>
             <Paper elevation={3} sx={{ p: 3, mb: 3 }}>
                 <Stepper activeStep={activeStep} sx={{ mb: 4 }}>
                     {steps.map((label) => (
@@ -338,15 +362,10 @@ const Upload = () => {
                 </Stepper>
 
                 {error && (
-                    <Alert severity="error" sx={{ mb: 2 }}>
-                        {error}
-                    </Alert>
+                    <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>
                 )}
-
                 {success && (
-                    <Alert severity="success" sx={{ mb: 2 }}>
-                        {success}
-                    </Alert>
+                    <Alert severity="success" sx={{ mb: 2 }}>{success}</Alert>
                 )}
 
                 {activeStep === 0 && (
@@ -354,7 +373,6 @@ const Upload = () => {
                         <Typography variant="body1" gutterBottom>
                             Arraste e solte imagens aqui ou clique para selecionar arquivos.
                         </Typography>
-
                         <Box
                             {...getRootProps()}
                             sx={{
@@ -378,15 +396,12 @@ const Upload = () => {
                             {isDragActive ? (
                                 <Typography>Solte as imagens aqui...</Typography>
                             ) : (
-                                <Typography>
-                                    Arraste e solte imagens aqui, ou clique para selecionar arquivos
-                                </Typography>
+                                <Typography>Arraste e solte imagens aqui, ou clique para selecionar arquivos</Typography>
                             )}
                             <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
                                 Formatos aceitos: JPG, JPEG, PNG, BMP (máx. 5MB)
                             </Typography>
                         </Box>
-
                         {/* Exibição de arquivos - Simplificada - Apenas lista de nomes */}
                         {files.length > 0 && (
                             <Box>
@@ -456,9 +471,7 @@ const Upload = () => {
 
                 {activeStep === 1 && (
                     <Box>
-                        <Typography variant="h6" gutterBottom>
-                            Processando Imagens
-                        </Typography>
+                        <Typography variant="h6" gutterBottom>Processando Imagens</Typography>
 
                         {/* Progresso geral */}
                         <Box sx={{ mb: 3 }}>
@@ -466,48 +479,32 @@ const Upload = () => {
                                 <Grid item xs={12} sm={6} md={3}>
                                     <Card>
                                         <CardContent>
-                                            <Typography color="text.secondary" gutterBottom>
-                                                Total
-                                            </Typography>
-                                            <Typography variant="h5">
-                                                {uploadProgress.totalFiles}
-                                            </Typography>
+                                            <Typography color="text.secondary" gutterBottom>Total</Typography>
+                                            <Typography variant="h5">{uploadProgress.totalFiles}</Typography>
                                         </CardContent>
                                     </Card>
                                 </Grid>
                                 <Grid item xs={12} sm={6} md={3}>
                                     <Card>
                                         <CardContent>
-                                            <Typography color="text.secondary" gutterBottom>
-                                                Processados
-                                            </Typography>
-                                            <Typography variant="h5">
-                                                {uploadProgress.processed}
-                                            </Typography>
+                                            <Typography color="text.secondary" gutterBottom>Processados</Typography>
+                                            <Typography variant="h5">{uploadProgress.processed}</Typography>
                                         </CardContent>
                                     </Card>
                                 </Grid>
                                 <Grid item xs={12} sm={6} md={3}>
                                     <Card>
                                         <CardContent>
-                                            <Typography color="text.secondary" gutterBottom>
-                                                Sucesso
-                                            </Typography>
-                                            <Typography variant="h5" color="success.main">
-                                                {uploadProgress.successful}
-                                            </Typography>
+                                            <Typography color="text.secondary" gutterBottom>Sucesso</Typography>
+                                            <Typography variant="h5" color="success.main">{uploadProgress.successful}</Typography>
                                         </CardContent>
                                     </Card>
                                 </Grid>
                                 <Grid item xs={12} sm={6} md={3}>
                                     <Card>
                                         <CardContent>
-                                            <Typography color="text.secondary" gutterBottom>
-                                                Falhas
-                                            </Typography>
-                                            <Typography variant="h5" color="error.main">
-                                                {uploadProgress.failed}
-                                            </Typography>
+                                            <Typography color="text.secondary" gutterBottom>Falhas</Typography>
+                                            <Typography variant="h5" color="error.main">{uploadProgress.failed}</Typography>
                                         </CardContent>
                                     </Card>
                                 </Grid>
@@ -623,26 +620,27 @@ const Upload = () => {
 
                 {activeStep === 2 && (
                     <Box>
-                        <Typography variant="h6" gutterBottom>
-                            Resultados do Processamento
-                        </Typography>
+                        <Typography variant="h6" gutterBottom>Resultados do Processamento</Typography>
 
                         <Box sx={{ mb: 3 }}>
                             <Grid container spacing={2}>
                                 <Grid item xs={12} sm={4}>
                                     <Card>
                                         <CardContent>
-                                            <Typography color="text.secondary" gutterBottom>
-                                                Total de Arquivos
-                                            </Typography>
-                                            <Typography variant="h4">
-                                                {files.length}
-                                            </Typography>
+                                            <Typography color="text.secondary" gutterBottom>Total de Arquivos</Typography>
+                                            <Typography variant="h4">{files.length}</Typography>
                                         </CardContent>
                                     </Card>
                                 </Grid>
                                 <Grid item xs={12} sm={4}>
-                                    <Card>
+                                    <Card
+                                        sx={{
+                                            cursor: 'pointer',
+                                            border: resultFilter === 'success' ? '2px solid #2e7d32' : 'none',
+                                            '&:hover': { boxShadow: 3 }
+                                        }}
+                                        onClick={() => toggleResultFilter('success')}
+                                    >
                                         <CardContent>
                                             <Typography color="text.secondary" gutterBottom>
                                                 Processados com Sucesso
@@ -654,7 +652,14 @@ const Upload = () => {
                                     </Card>
                                 </Grid>
                                 <Grid item xs={12} sm={4}>
-                                    <Card>
+                                    <Card
+                                        sx={{
+                                            cursor: 'pointer',
+                                            border: resultFilter === 'failed' ? '2px solid #d32f2f' : 'none',
+                                            '&:hover': { boxShadow: 3 }
+                                        }}
+                                        onClick={() => toggleResultFilter('failed')}
+                                    >
                                         <CardContent>
                                             <Typography color="text.secondary" gutterBottom>
                                                 Falhas
@@ -670,11 +675,20 @@ const Upload = () => {
 
                         <Typography variant="h6" gutterBottom>
                             Detalhes dos Arquivos
+                            {resultFilter !== 'all' && (
+                                <Chip
+                                    size="small"
+                                    label={resultFilter === 'success' ? 'Apenas sucesso' : 'Apenas falhas'}
+                                    color={resultFilter === 'success' ? 'success' : 'error'}
+                                    onDelete={() => setResultFilter('all')}
+                                    sx={{ ml: 1 }}
+                                />
+                            )}
                         </Typography>
 
                         {/* Lista de resultados */}
                         <List>
-                            {paginatedFiles().map((file) => (
+                            {getFilteredFiles().map((file) => (
                                 <ListItem key={file.id} divider>
                                     <ListItemIcon>
                                         {file.status === 'success' ? (
@@ -698,10 +712,10 @@ const Upload = () => {
                             ))}
                         </List>
 
-                        {totalPages > 1 && (
+                        {totalFilteredPages > 1 && (
                             <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
                                 <Pagination
-                                    count={totalPages}
+                                    count={totalFilteredPages}
                                     page={currentPage}
                                     onChange={handlePageChange}
                                     color="primary"
@@ -736,9 +750,7 @@ const Upload = () => {
                 maxWidth="sm"
                 fullWidth
             >
-                <DialogTitle>
-                    Detalhes do Arquivo
-                </DialogTitle>
+                <DialogTitle>Detalhes do Arquivo</DialogTitle>
                 <DialogContent dividers>
                     {selectedFile && (
                         <Grid container spacing={2}>
@@ -775,18 +787,10 @@ const Upload = () => {
                                 )}
                             </Grid>
                             <Grid item xs={12} sm={6}>
-                                <Typography variant="subtitle1" gutterBottom>
-                                    Informações do Arquivo
-                                </Typography>
-                                <Typography variant="body2">
-                                    <strong>Nome:</strong> {selectedFile.file.name}
-                                </Typography>
-                                <Typography variant="body2">
-                                    <strong>Tamanho:</strong> {(selectedFile.file.size / 1024).toFixed(1)} KB
-                                </Typography>
-                                <Typography variant="body2">
-                                    <strong>Tipo:</strong> {selectedFile.file.type}
-                                </Typography>
+                                <Typography variant="subtitle1" gutterBottom>Informações do Arquivo</Typography>
+                                <Typography variant="body2"><strong>Nome:</strong> {selectedFile.file.name}</Typography>
+                                <Typography variant="body2"><strong>Tamanho:</strong> {(selectedFile.file.size / 1024).toFixed(1)} KB</Typography>
+                                <Typography variant="body2"><strong>Tipo:</strong> {selectedFile.file.type}</Typography>
                                 <Typography variant="body2">
                                     <strong>Status:</strong> {
                                         selectedFile.status === 'success' ? 'Processado com sucesso' :
@@ -797,38 +801,22 @@ const Upload = () => {
                                 </Typography>
 
                                 {selectedFile.status === 'success' && selectedFile.result && (
-                                    <>
+                  <>
                                         <Divider sx={{ my: 2 }} />
-                                        <Typography variant="subtitle1" gutterBottom>
-                                            Resultado do Processamento
-                                        </Typography>
-                                        <Typography variant="body2">
-                                            <strong>ID da Pessoa:</strong> {selectedFile.result.person_id || selectedFile.result.id || "Não disponível"}
-                                        </Typography>
-                                        <Typography variant="body2">
-                                            <strong>CPF:</strong> {selectedFile.result.cpf || "Não disponível"}
-                                        </Typography>
-                                        <Typography variant="body2">
-                                            <strong>Nome:</strong> {selectedFile.result.name || "Não disponível"}
-                                        </Typography>
-                                        <Typography variant="body2">
-                                            <strong>Origem:</strong> {selectedFile.result.origin || "Não disponível"}
-                                        </Typography>
-                                        <Typography variant="body2">
-                                            <strong>Face Detectada:</strong> {selectedFile.result.face_detected ? 'Sim' : 'Não'}
-                                        </Typography>
+                                        <Typography variant="subtitle1" gutterBottom>Resultado do Processamento</Typography>
+                                        <Typography variant="body2"><strong>ID da Pessoa:</strong> {selectedFile.result.person_id || selectedFile.result.id || "Não disponível"}</Typography>
+                                        <Typography variant="body2"><strong>CPF:</strong> {selectedFile.result.cpf || "Não disponível"}</Typography>
+                                        <Typography variant="body2"><strong>Nome:</strong> {selectedFile.result.name || "Não disponível"}</Typography>
+                                        <Typography variant="body2"><strong>Origem:</strong> {selectedFile.result.origin || "Não disponível"}</Typography>
+                                        <Typography variant="body2"><strong>Face Detectada:</strong> {selectedFile.result.face_detected ? 'Sim' : 'Não'}</Typography>
                                     </>
                                 )}
 
                                 {selectedFile.status === 'error' && (
                                     <>
                                         <Divider sx={{ my: 2 }} />
-                                        <Typography variant="subtitle1" color="error" gutterBottom>
-                                            Erro
-                                        </Typography>
-                                        <Typography variant="body2">
-                                            {selectedFile.error || 'Erro desconhecido durante o processamento.'}
-                                        </Typography>
+                                        <Typography variant="subtitle1" color="error" gutterBottom>Erro</Typography>
+                                        <Typography variant="body2">{selectedFile.error || 'Erro desconhecido durante o processamento.'}</Typography>
                                     </>
                                 )}
                             </Grid>
@@ -836,9 +824,7 @@ const Upload = () => {
                     )}
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={() => setDetailsOpen(false)}>
-                        Fechar
-                    </Button>
+                    <Button onClick={() => setDetailsOpen(false)}>Fechar</Button>
                 </DialogActions>
             </Dialog>
         </Box>
