@@ -54,7 +54,9 @@ class Orgao(Base):
             ('009', 'GM'),
             ('010', 'SESP'),
             ('011', 'SEJUC'),
-            ('012', 'MITRA')
+            ('012', 'MITRA'),
+            ('013', 'DETRAN'),
+            ('014', 'SIF')
         ]
         
         for codigo, nome in orgaos:

@@ -53,7 +53,9 @@ class FileProcessor:
             "009": "gm",
             "010": "sesp",
             "011": "sejuc",
-            "012": "mitra"
+            "012": "mitra",
+            "013": "detran",
+            "014": "sif"
         }
         
         # Criar diretórios se não existirem
