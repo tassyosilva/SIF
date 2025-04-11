@@ -127,7 +127,8 @@ async def upload_file(
     # Verificar se a pessoa já existe no banco de dados
     db_person = db.query(Person).filter(
         Person.name == result["person_name"],
-        Person.cpf == result["cpf"]
+        Person.cpf == result["cpf"],
+        Person.person_id == result["person_id"]
     ).first()
     
     if not db_person:
@@ -185,8 +186,9 @@ def batch_process(db: Session = Depends(get_db)):
             if detail["success"]:
                 # Verificar se a pessoa já existe no banco de dados
                 db_person = db.query(Person).filter(
-                    Person.name == detail["person_name"],
-                    Person.cpf == detail["cpf"]
+                    Person.name == result["person_name"],
+                    Person.cpf == result["cpf"],
+                    Person.person_id == result["person_id"]
                 ).first()
                 
                 if not db_person:
