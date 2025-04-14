@@ -312,9 +312,13 @@ const Search = () => {
   // Função para obter a cor com base na similaridade
   const getSimilarityColor = (similarity: number) => {
     if (similarity >= 0.9) return theme.palette.success.main;
-    if (similarity >= 0.8) return theme.palette.primary.main;
     if (similarity >= 0.7) return theme.palette.warning.main;
     return theme.palette.error.main;
+  };
+
+  // Função para formatar CPF para exibição
+  const formatCpfForDisplay = (cpf: string) => {
+    return cpf === "000.000.000-00" ? "Não informado" : cpf;
   };
 
   // Função para obter o ícone do método de busca
@@ -838,8 +842,7 @@ const Search = () => {
                           <Chip
                             label={`${(result.similarity * 100).toFixed(1)}%`}
                             color={result.similarity >= 0.9 ? "success" :
-                              result.similarity >= 0.8 ? "primary" :
-                                result.similarity >= 0.7 ? "warning" : "error"}
+                              result.similarity >= 0.7 ? "warning" : "error"}
                             size="small"
                             sx={{
                               fontWeight: 'bold',
@@ -858,7 +861,7 @@ const Search = () => {
                         <Box sx={{ display: 'flex', alignItems: 'center' }}>
                           <CreditCardIcon fontSize="small" sx={{ color: 'text.secondary', mr: 1 }} />
                           <Typography variant="body2" color="text.secondary">
-                            <strong>CPF:</strong> {result.cpf}
+                            <strong>CPF:</strong> {formatCpfForDisplay(result.cpf)}
                           </Typography>
                         </Box>
                         <Box sx={{ display: 'flex', alignItems: 'center' }}>
@@ -883,8 +886,7 @@ const Search = () => {
                               variant="determinate"
                               value={result.similarity * 100}
                               color={result.similarity >= 0.9 ? "success" :
-                                result.similarity >= 0.8 ? "primary" :
-                                  result.similarity >= 0.7 ? "warning" : "error"}
+                                result.similarity >= 0.7 ? "warning" : "error"}
                               sx={{
                                 height: 8,
                                 borderRadius: 4,
@@ -1107,7 +1109,7 @@ const Search = () => {
                       </Avatar>
                       <Box>
                         <Typography variant="body2" color="text.secondary">CPF</Typography>
-                        <Typography variant="body1" fontWeight="medium">{selectedResult.cpf}</Typography>
+                        <Typography variant="body1" fontWeight="medium">{formatCpfForDisplay(selectedResult.cpf)}</Typography>
                       </Box>
                     </Box>
                     <Box sx={{ display: 'flex', alignItems: 'center' }}>
@@ -1149,8 +1151,7 @@ const Search = () => {
                             variant="determinate"
                             value={selectedResult.similarity * 100}
                             color={selectedResult.similarity >= 0.9 ? "success" :
-                              selectedResult.similarity >= 0.8 ? "primary" :
-                                selectedResult.similarity >= 0.7 ? "warning" : "error"}
+                              selectedResult.similarity >= 0.7 ? "warning" : "error"}
                             sx={{ height: 10, borderRadius: 5 }}
                           />
                         </Box>
@@ -1165,13 +1166,7 @@ const Search = () => {
                         </Typography>
                       </Box>
                       <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                        {selectedResult.similarity >= 0.9
-                          ? 'Similaridade muito alta - Alta probabilidade de ser a mesma pessoa'
-                          : selectedResult.similarity >= 0.8
-                            ? 'Similaridade alta - Provável que seja a mesma pessoa'
-                            : selectedResult.similarity >= 0.7
-                              ? 'Similaridade média - Possibilidade de ser a mesma pessoa'
-                              : 'Similaridade baixa - Baixa probabilidade de ser a mesma pessoa'}
+                        Atenção! O reconhecimento facial é um indicativo e não deve ser utilizado como certeza da identidade da face pesquisada. A identificação criminal deve obedecer a Lei nº 12.037/2009.
                       </Typography>
                     </Paper>
                   )}
