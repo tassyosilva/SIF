@@ -238,6 +238,7 @@ const Search = () => {
       if (response.success) {
         if (response.results.length > 0) {
           setSuccess(true);
+          console.log("Resultados da busca:", response.results);
         } else {
           setError('Nenhum resultado encontrado para sua busca.');
         }
@@ -821,16 +822,16 @@ const Search = () => {
                     <CardMedia
                       component="img"
                       height="200"
-                      image={`${process.env.REACT_APP_API_URL || '/api'}/persons/${result.person_id}/image`}
+                      image={`${process.env.REACT_APP_API_URL || '/api'}/recognition/image-by-filename/${result.filename}`}
                       alt={result.person_name}
                       onError={(e: any) => {
                         e.target.onerror = null;
                         e.target.src = 'https://via.placeholder.com/300x200?text=Imagem+não+disponível';
                       }}
                       sx={{
-                        objectFit: 'contain', // Mudar de 'cover' para 'contain'
-                        objectPosition: 'center', // Mudar de 'center top' para 'center'
-                        backgroundColor: '#f5f5f5' // Adicionar um fundo para melhor visualização
+                        objectFit: 'contain',
+                        objectPosition: 'center',
+                        backgroundColor: '#f5f5f5'
                       }}
                     />
                     <CardContent sx={{ flexGrow: 1 }}>
@@ -997,7 +998,7 @@ const Search = () => {
                     >
                       <Box
                         component="img"
-                        src={`${process.env.REACT_APP_API_URL || '/api'}/persons/${selectedResult.person_id}/image?image_id=${personImages[currentImageIndex].id}`}
+                        src={`${process.env.REACT_APP_API_URL || '/api'}/recognition/image-by-filename/${selectedResult.filename}`}
                         alt={selectedResult.person_name}
                         sx={{
                           width: '100%',
@@ -1061,30 +1062,30 @@ const Search = () => {
                       </Box>
                     )}
                   </Box>
-                ) : (
-                  <Paper
-                    elevation={4}
-                    sx={{
-                      overflow: 'hidden',
-                      borderRadius: 2
-                    }}
-                  >
-                    <Box
-                      component="img"
-                      src={`${process.env.REACT_APP_API_URL || '/api'}/persons/${selectedResult.person_id}/image`}
-                      alt={selectedResult.person_name}
+                  ) : (
+                    <Paper
+                      elevation={4}
                       sx={{
-                        width: '100%',
-                        height: 400,
-                        objectFit: 'contain',
-                        backgroundColor: '#f5f5f5'
+                        overflow: 'hidden',
+                        borderRadius: 2
                       }}
-                      onError={(e: any) => {
-                        e.target.onerror = null;
-                        e.target.src = 'https://via.placeholder.com/300x400?text=Imagem+não+disponível';
-                      }}
-                    />
-                  </Paper>
+                    >
+                      <Box
+                        component="img"
+                        src={`${process.env.REACT_APP_API_URL || '/api'}/recognition/image-by-filename/${selectedResult.filename}`}
+                        alt={selectedResult.person_name}
+                        sx={{
+                          width: '100%',
+                          height: 400,
+                          objectFit: 'contain',
+                          backgroundColor: '#f5f5f5'
+                        }}
+                        onError={(e: any) => {
+                          e.target.onerror = null;
+                          e.target.src = 'https://via.placeholder.com/300x400?text=Imagem+não+disponível';
+                        }}
+                      />
+                    </Paper>
                 )}
               </Grid>
               <Grid item xs={12} md={6}>
@@ -1166,7 +1167,11 @@ const Search = () => {
                         </Typography>
                       </Box>
                       <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                        Atenção! O reconhecimento facial é um indicativo e não deve ser utilizado como certeza da identidade da face pesquisada. A identificação criminal deve obedecer a Lei nº 12.037/2009.
+                        {selectedResult.similarity >= 0.9
+                          ? 'Alta probabilidade de ser a mesma pessoa.'
+                          : selectedResult.similarity >= 0.7
+                            ? 'Probabilidade moderada. Verifique com atenção.'
+                            : 'Baixa similaridade. Provavelmente não é a mesma pessoa.'}
                       </Typography>
                     </Paper>
                   )}

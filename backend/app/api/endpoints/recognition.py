@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, File, UploadFile, Query, Body
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 from typing import List, Optional
 import os
@@ -10,6 +11,18 @@ from ...config import settings
 from ...models.person import Person, PersonImage
 
 router = APIRouter()
+
+@router.get("/image-by-filename/{filename}")
+def get_image_by_filename(filename: str):
+    """Retorna uma imagem pelo seu nome de arquivo."""
+    # Construir o caminho completo para o arquivo
+    file_path = os.path.join(settings.PROCESSED_DIR, filename)
+    
+    # Verificar se o arquivo existe
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="Image not found")
+    
+    return FileResponse(file_path)
 
 @router.post("/search/", response_model=SearchResponse)
 async def search_faces(
@@ -41,6 +54,13 @@ async def search_faces(
         from ...core.dependencies import get_file_processor
         file_processor = get_file_processor()
         result = file_processor.search_similar_faces(file_path, k)
+        
+        # Adicionar URLs diretas para cada resultado
+        if result.get("success", False) and "results" in result:
+            base_url = f"{settings.API_PREFIX}/recognition/image-by-filename"
+            for item in result["results"]:
+                item["direct_image_url"] = f"{base_url}/{item['filename']}"
+        
         return result
     finally:
         # Remover o arquivo temporário
@@ -85,6 +105,7 @@ def search_by_person_id(
         "person_name": person.name,
         "origin": person.origin,
         "filename": latest_image.filename,
+        "direct_image_url": f"{settings.API_PREFIX}/recognition/image-by-filename/{latest_image.filename}",
         "processed_date": latest_image.processed_date.isoformat() if latest_image.processed_date else ""
     }
 
@@ -100,9 +121,7 @@ def search_by_cpf(
     k: int = Query(5, description="Número de resultados a retornar"),
     db: Session = Depends(get_db)
 ):
-    """
-    Busca diretamente uma pessoa pelo seu CPF.
-    """
+    """Busca diretamente uma pessoa pelo seu CPF."""
     # Buscar a pessoa no banco de dados
     person = db.query(Person).filter(Person.cpf == cpf).first()
     if not person:
@@ -111,12 +130,12 @@ def search_by_cpf(
             "message": "CPF não encontrado no sistema.",
             "results": []
         }
-    
+
     # Buscar a imagem mais recente desta pessoa usando registro_unico
     latest_image = db.query(PersonImage).filter(
         PersonImage.registro_unico == person.registro_unico
     ).order_by(PersonImage.processed_date.desc()).first()
-    
+
     if not latest_image or not latest_image.file_path or not os.path.exists(latest_image.file_path):
         return {
             "success": False,
@@ -134,6 +153,7 @@ def search_by_cpf(
         "person_name": person.name,
         "origin": person.origin,
         "filename": latest_image.filename,
+        "direct_image_url": f"{settings.API_PREFIX}/recognition/image-by-filename/{latest_image.filename}",
         "processed_date": latest_image.processed_date.isoformat() if latest_image.processed_date else ""
     }
 
@@ -166,7 +186,7 @@ def search_by_name(
         latest_image = db.query(PersonImage).filter(
             PersonImage.registro_unico == person.registro_unico
         ).order_by(PersonImage.processed_date.desc()).first()
-        
+
         if latest_image and latest_image.file_path and os.path.exists(latest_image.file_path):
             # Adicionar à lista de resultados
             results.append({
@@ -178,6 +198,7 @@ def search_by_name(
                 "person_name": person.name,
                 "origin": person.origin,
                 "filename": latest_image.filename,
+                "direct_image_url": f"{settings.API_PREFIX}/recognition/image-by-filename/{latest_image.filename}",
                 "processed_date": latest_image.processed_date.isoformat() if latest_image.processed_date else ""
             })
 

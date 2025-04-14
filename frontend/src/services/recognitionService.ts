@@ -2,7 +2,7 @@ import { api } from './api';
 
 export interface SearchResult {
     person_id: string;
-    person_name: string;  // Alterado de "name" para "person_name"
+    person_name: string;
     origin: string;
     similarity: number;
     file_path: string;
@@ -11,6 +11,7 @@ export interface SearchResult {
     distance: number;
     filename: string;
     processed_date: string;
+    direct_image_url?: string;
 }
 
 export interface SearchResponse {
